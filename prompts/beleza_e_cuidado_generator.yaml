@@ -1,5 +1,5 @@
-name: "Gerador de Página de Beleza e Cuidado v7 (Estrutura V-Tex com Details/Summary)"
-description: "Gera conteúdo persuasivo para produtos de beleza seguindo a lauda HTML rigorosa da V-Tex, com FAQ em formato <details> e <summary>."
+name: "Gerador de Página de Beleza e Cuidado v9 (Estrutura Consistente)"
+description: "Gera conteúdo persuasivo para produtos de beleza seguindo a lauda HTML rigorosa da V-Tex, com FAQ em formato <details> e <summary>, e otimizado para o Google Merchant."
 template: |
   # MISSÃO: GERAR CÓDIGO DE PRODUTO COMPLETO E SEGURO PARA V-TEX
 
@@ -8,47 +8,43 @@ template: |
 
   ## 2. DADOS DE ENTRADA
   - **Nome do Produto:** {{ product_name }}
-  - **Informações do Cliente (Contexto Principal):**
-  ---
-  {{ product_info }}
-  ---
-  - **Dúvidas Reais de Consumidores (Fonte OBRIGATÓRIA para o FAQ):**
-  ---
-  {{ faq_research_context }}
-  ---
-  - **Palavras-Chave Relevantes (Fonte para Otimização):**
-  ---
-  {{ keyword_research_context }}
-  ---
+  - **Informações do Produto:** {{ product_info }}
 
   ## 3. REGRAS TÉCNICAS E DE CONTEÚDO
-  1.  **SAÍDA ÚNICA:** Sua resposta final deve ser **APENAS UM OBJETO JSON VÁLIDO** contendo o `html_content`.
+  1.  **SAÍDA ÚNICA:** Sua resposta final deve ser **APENAS UM OBJETO JSON VÁLIDO** contendo as chaves `seo_title`, `meta_description`, e `html_content`.
   2.  **HIERARQUIA DE TÍTULOS:** O título principal do conteúdo deve ser `<h2>`. Subtítulos devem ser `<h3>`. **NUNCA USE `<h1>`**.
   3.  **ESTRUTURA DO FAQ:** A seção de FAQ **DEVE** usar a estrutura `<details open="True"><summary><h3>[Pergunta]</h3></summary><p>[Resposta]</p></details>` para cada pergunta.
   4.  **ORDEM E QUALIDADE:** Siga a ordem da lauda e escreva de forma clara e concisa.
 
   ## 4. LAUDA MESTRA DE CONTEÚDO (ESTRUTURA OBRIGATÓRIA PARA `html_content`)
+  # O CONTEÚDO HTML FINAL (INCLUINDO CÓDIGO E ESPAÇOS) NÃO DEVE ULTRAPASSAR 4500 CARACTERES.
 
   --- INÍCIO DA ESTRUTURA HTML ---
 
   <div class="descricao-produto">
 
-  <h2>{{ product_name }}: Guia Completo de Benefícios e Uso</h2>
+  <h2>{{ product_name }}: Para que serve e como usar</h2>
 
-  <h3>O que é e para que serve?</h3>
-  <p>[SUMARIZE em um parágrafo o que é o produto e seu principal benefício, usando o contexto do cliente. Incorpore de 1 a 2 termos do `keyword_research_context` aqui de forma natural.]</p>
+  <h3>Para que serve o {{ product_name }}?</h3>
+  <p>[SUMARIZE em um parágrafo o que é o produto e seu principal benefício, usando o `product_info.context_text`. Incorpore de 1 a 2 termos do `product_info.keyword_research_context` aqui de forma natural.]</p>
 
   <h3>Principais Benefícios</h3>
   <ul>
-  [CRIE uma lista `<ul>` com 3 a 5 benefícios claros e diretos, extraídos do `product_info`.]
+  [CRIE uma lista `<ul>` com 3 a 5 benefícios claros e diretos, extraídos do `product_info.context_text`.]
   </ul>
 
   <h3>Como usar o {{ product_name }}?</h3>
-  <p>[DESCREVA o modo de uso de forma simples, como um passo a passo. Baseie-se no `product_info` ou, na ausência, em conhecimento geral sobre o tipo de produto.]</p>
+  <p>[DESCREVA o modo de uso de forma simples, como um passo a passo. Baseie-se no `product_info.context_text` ou, na ausência, em conhecimento geral sobre o tipo de produto.]</p>
+
+  <h2>Especificações do Produto</h2>
+  <table>
+      <tr><td>Marca</td><td>{{ product_info.brand | default('Não informado') }}</td></tr>
+      <tr><td>Categoria</td><td>{{ product_info.categoria_produto | default('Não informado') }}</td></tr>
+  </table>
 
   <h2>Perguntas Frequentes sobre {{ product_name }}</h2>
   
-  [SELECIONE as 3 perguntas mais relevantes do `faq_research_context` e formate-as usando a estrutura <details><summary> abaixo.]
+  [SELECIONE as 3 perguntas mais relevantes do `product_info.faq_research_context` e formate-as usando a estrutura <details><summary> abaixo. As respostas devem ser curtas e diretas, com no máximo 3 frases (entre 50 e 80 palavras).]
 
   <details open="True">
     <summary><h3>[PERGUNTA 1 EXTRAÍDA DA PESQUISA]</h3></summary>
@@ -72,7 +68,7 @@ template: |
   --- FIM DA ESTRUTURA HTML ---
 
   ## 5. REGRAS PARA "seo_title" e "meta_description"
-  - **`seo_title`**: (50-65 caracteres) Padrão: `[Nome do Produto] | Mevo Farma`.
+  - **`seo_title`**: (Até 100 caracteres) Padrão: `[Nome do Produto] | Mevo Farma`. Priorize a ordem: Nome, Atributos Principais, Quantidade.
   - **`meta_description`**: (120-165 caracteres) Foco no benefício. Deve terminar com: `Compre Agora na Mevo Farma.`
 
   ## 6. REGRA FINAL: SAÍDA JSON ESTRITA E VÁLIDA

@@ -1,16 +1,16 @@
 name: "Auditor de Qualidade v15 (Pontuação Granular e Anti-Repetição)"
 description: "Audita o conteúdo mantendo as regras originais do utilizador e adicionando uma verificação rigorosa contra a repetição de conteúdo entre o corpo e o FAQ."
 template: |
-  **TAREFA:**
+  # TAREFA:
   Você é o SEO-AuditorBot 5000. Sua missão é auditar o JSON de uma página de produto, garantindo que ele siga a Estrutura Mestra e as melhores práticas de SEO.
 
-  **DADOS DE ENTRADA:**
+  # DADOS DE ENTRADA:
   - **JSON Completo da Página:**
   ---
   {{ full_page_json }}
   ---
 
-  **CHECKLIST DE AUDITORIA E PONTUAÇÃO (TOTAL 100 pts):**
+  # CHECKLIST DE AUDITORIA E PONTUAÇÃO (TOTAL 100 pts):
 
   - **1. Estrutura Geral (10 pts):**
     - `json_structure`: Vale 5 pts se o JSON for válido e contiver as chaves `seo_title`, `meta_description`, e `html_content`.
@@ -32,13 +32,25 @@ template: |
   - **5. SEO de Varejo (30 pts):**
     - `seo_title_format`: Vale 15 pts.
         - **(7.5 pts)** se o `seo_title` seguir o padrão `[Produto] [Dosagem] [Quantidade]`.
-        - **(7.5 pts)** se o `seo_title` tiver **entre 50-65 caracteres**.
+        - **(7.5 pts)** se o `seo_title` tiver **entre 50-90 caracteres** e conter o nome do fabricante.
     - `meta_description_format`: Vale 15 pts.
         - **(5 pts)** se a `meta_description` tiver **entre 120-165 caracteres**.
         - **(5 pts)** se a `meta_description` **NÃO contiver a palavra 'bula'**.
         - **(5 pts)** se a `meta_description` **terminar com uma chamada para a loja**, como 'na Mevo Farma'.
 
-  **SAÍDA REQUERIDA (FORMATO JSON ESTRITO E OBRIGATÓRIO):**
+  # SAÍDA REQUERIDA (FORMATO JSON ESTRITO E OBRIGATÓRIO):
   Sua resposta deve ser **APENAS** um objeto JSON válido. O breakdown **DEVE** conter as chaves `score`, `max_score`, e `feedback` para CADA item do checklist.
 
-  --- INICIE A AUDITORIA AGORA ---
+  ### EXEMPLO DE SAÍDA CORRETA:
+  ```json
+  {
+    "1. Estrutura Geral": {
+      "json_structure": {"score": 5, "max_score": 5, "feedback": "SUCESSO: O JSON de entrada é válido e contém todas as chaves obrigatórias."},
+      "no_h1_tag": {"score": 5, "max_score": 5, "feedback": "SUCESSO: Nenhuma tag H1 foi encontrada."}
+    },
+    "2. Ordem e Conteúdo das Seções": {
+       "section_order": {"score": 0, "max_score": 10, "feedback": "FALHA: A ordem dos títulos H2 está incorreta."}
+    },
+    "total_score": 10,
+    "feedback_geral": "O conteúdo tem uma boa base, mas a ordem das seções precisa ser corrigida."
+  }

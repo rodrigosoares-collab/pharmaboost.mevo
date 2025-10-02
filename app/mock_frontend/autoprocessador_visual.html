@@ -177,7 +177,7 @@
                     <label for="catalog-upload" class="file-label border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center h-full text-center cursor-pointer">
                         <i class="fas fa-database text-4xl mb-3"></i>
                         <span id="catalog-filename" class="font-semibold">Arraste ou clique para selecionar o catálogo</span>
-                        <span class="text-xs text-slate-500 mt-1">Arquivo .xlsx</span>
+                        <span class="text-xs text-slate-500 mt-1">Opcional. Se enviado, o lote será processado como MEDICAMENTO.</span>
                     </label>
                     <input type="file" id="catalog-upload" class="hidden" accept=".xlsx">
                 </div>
@@ -186,7 +186,7 @@
                     <label for="items-upload" class="file-label border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center h-full text-center cursor-pointer">
                          <i class="fas fa-file-excel text-4xl mb-3"></i>
                          <span id="items-filename" class="font-semibold">Arraste ou clique para selecionar os itens</span>
-                         <span class="text-xs text-slate-500 mt-1">Arquivo .xlsx</span>
+                         <span class="text-xs text-slate-500 mt-1">Obrigatório.</span>
                     </label>
                     <input type="file" id="items-upload" class="hidden" accept=".xlsx">
                 </div>
@@ -482,7 +482,7 @@
             setProcessingState(isProcessing, flow = 'lote') {
                 const btn = flow === 'lote' ? dom.generateDraftButton : dom.generateManualButton;
                 const loader = flow === 'lote' ? dom.buttonLoaderLote : dom.buttonLoaderManual;
-                const textEl = flow === 'lote' ? dom.buttonTextLote : dom.buttonTextManual; // CORREÇÃO AQUI
+                const textEl = flow === 'lote' ? dom.buttonTextLote : dom.buttonTextManual;
                 const originalText = flow === 'lote' ? 'Gerar Rascunho' : 'Gerar Conteúdo';
                 
                 btn.disabled = isProcessing;
@@ -503,6 +503,7 @@
                 dom.progressLabel.innerHTML = `Processando: <b>${current} de ${total}</b> (SKU: ${sku})`;
             },
             analyzeHeadings(htmlContent) {
+                if (typeof htmlContent !== 'string') return '';
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(htmlContent, 'text/html');
                 const headings = Array.from(doc.querySelectorAll('h1, h2, h3, h4, h5, h6'));
@@ -574,9 +575,9 @@
                 const hasApproved = items.some(i => i.status === 'approved');
                 const hasDisapproved = items.some(i => i.status === 'disapproved');
 
-                dom.finalizeButton.disabled = !hasApproved;
+                dom.finalizeButton.disabled = !hasApproved || !state.baseSpreadsheetFile;
                 dom.reprocessButton.disabled = !hasDisapproved;
-                dom.finalizeDisapprovedButton.disabled = !hasDisapproved;
+                dom.finalizeDisapprovedButton.disabled = !hasDisapproved || !state.baseSpreadsheetFile;
                 
                 dom.approvedSection.classList.toggle('hidden', !hasApproved);
                 dom.disapprovedSection.classList.toggle('hidden', !hasDisapproved);
@@ -612,11 +613,6 @@
             const statusBadge = card.querySelector('[data-name="statusBadge"]');
             const feedbackSection = card.querySelector('[data-name="feedback-section"]');
             
-            // Não precisa mais atualizar aqui, faremos isso ao finalizar
-            // item.seoTitle = card.querySelector('[data-name="seoTitle"]').value;
-            // item.metaDescription = card.querySelector('[data-name="metaDescription"]').value;
-            // item.htmlContent = card.querySelector('[data-name="htmlContent"]').value;
-
             actionsDiv.classList.add('hidden');
             statusBadge.classList.remove('hidden');
             
@@ -629,7 +625,7 @@
                 badgeHtml = `<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-rose-100 text-rose-800">Reprovado</span>`;
                 dom.disapprovedArea.appendChild(card);
                 feedbackSection.classList.remove('hidden');
-            } else {
+            } else { // 'pending'
                 statusBadge.classList.add('hidden');
                 actionsDiv.classList.remove('hidden');
                 dom.reviewArea.appendChild(card);
@@ -647,9 +643,11 @@
             let endpoint = '';
             
             if (flow === 'lote') {
-                if (!state.catalogFile || !state.itemsFile) return ui.showToast('Selecione o catálogo e os itens a processar.', 'error');
-                formData.append('catalog_file', state.catalogFile);
+                if (!state.itemsFile) return ui.showToast('O arquivo de "Itens a Processar" é obrigatório.', 'error');
                 formData.append('items_file', state.itemsFile);
+                if (state.catalogFile) {
+                    formData.append('catalog_file', state.catalogFile);
+                }
                 endpoint = '/batch-process-and-generate-draft';
             } else {
                 const productName = dom.manualProductName.value;
@@ -671,7 +669,6 @@
                     if (event === 'log') ui.addLogMessage(data.message, data.type);
                     else if (event === 'progress') ui.updateProgressBar(data.current, data.total, data.sku);
                     else if (event === 'done' || event === 'done_manual') {
-                        if (flow === 'manual') data.isManual = true;
                         ui.renderCard(data); 
                         ui.updateGlobalUI();
                     }
@@ -691,22 +688,18 @@
             }
         }
         
-        // --- INÍCIO DA CORREÇÃO ---
         async function handleFinalize(type) {
             if (!state.baseSpreadsheetFile) {
                  return ui.showToast(`Carregue a "Planilha Base para Finalização" para continuar.`, 'error');
             }
 
-            const itemsToFilter = Object.values(state.reviewItems);
-            const itemsToFinalize = itemsToFilter.filter(i => i.status === type);
-            
+            const itemsToFinalize = Object.values(state.reviewItems).filter(i => i.status === type);
             if (itemsToFinalize.length === 0) {
                 return ui.showToast(`Nenhum item ${type} para finalizar.`, 'info');
             }
 
             ui.showToast(`Gerando planilha para ${itemsToFinalize.length} item(ns)...`, 'info');
 
-            // Cria um array de objetos "limpos" contendo apenas o necessário
             const cleanData = itemsToFinalize.map(item => {
                 const card = document.getElementById(`card-${item.sku}`);
                 return {
@@ -733,29 +726,19 @@
                 ui.showToast(error.message, 'error');
             }
         }
-        // --- FIM DA CORREÇÃO ---
         
         async function handleReprocess() {
             const itemsToReprocess = Object.values(state.reviewItems).filter(i => i.status === 'disapproved');
             if (itemsToReprocess.length === 0) return ui.showToast('Não há itens reprovados para reprocessar.', 'info');
-
-            const isManualReprocess = itemsToReprocess.some(item => item.isManual);
             
             const formData = new FormData();
-
-            if (isManualReprocess) {
-                if (!state.manualBulaFile) {
-                    return ui.showToast('Para reprocessar um item manual, por favor, selecione novamente a bula na aba "Processar Item Manual".', 'error');
-                }
-                formData.append('bula_file', state.manualBulaFile);
-            } else {
-                if (!state.catalogFile) {
-                    return ui.showToast('O "Catálogo Geral" é necessário para reprocessar itens de lote.', 'error');
-                }
+            // A decisão MEDICAMENTO vs BELEZA é do backend baseada neste arquivo.
+            if (state.catalogFile) {
                 formData.append('catalog_file', state.catalogFile);
             }
 
             ui.addLogMessage(`<b>Iniciando reprocessamento para ${itemsToReprocess.length} item(ns)...</b>`, 'info');
+            
             const itemsToSubmit = itemsToReprocess.map(item => {
                 const card = document.getElementById(`card-${item.sku}`);
                 card.remove(); // Remove o card antigo da UI
@@ -763,7 +746,7 @@
                     sku: item.sku,
                     productName: item.productName,
                     feedback: card.querySelector('[data-name="feedbackText"]').value,
-                    rawJsonContent: state.reviewItems[item.sku]?.raw_json_content || null
+                    rawJsonContent: item.raw_json_content ? JSON.stringify(item.raw_json_content) : '{}'
                 };
             });
 
@@ -779,7 +762,6 @@
                     else if (event === 'done') {
                         const sku = data['_EANSKU'];
                         ui.addLogMessage(`Conteúdo regenerado para SKU ${sku}. Movido para revisão.`, 'success');
-                        if (isManualReprocess) data.isManual = true; 
                         ui.renderCard(data);
                     }
                 });
@@ -795,13 +777,11 @@
         function setupEventListeners() {
             const handleFileUpload = (e, stateKey, filenameEl) => {
                 const file = e.target.files[0];
-                const originalText = filenameEl.innerHTML; // Salva o texto original do label
                 if (file) {
                     state[stateKey] = file;
                     filenameEl.textContent = file.name;
                 } else {
-                    state[stateKey] = null;
-                    filenameEl.innerHTML = originalText;
+                    // Manter o nome do arquivo se o usuário cancelar a seleção
                 }
             };
             
@@ -817,7 +797,7 @@
                     reader.onload = (event) => {
                         try {
                             const data = new Uint8Array(event.target.result);
-                            const workbook = XLSX.read(data, { type: 'array', bookVBA: true });
+                            const workbook = XLSX.read(data, { type: 'array' });
                             const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                             const json = XLSX.utils.sheet_to_json(worksheet);
                             
@@ -879,6 +859,14 @@
                     card.style.display = (name.includes(query) || sku.includes(query)) ? '' : 'none';
                 });
             };
+            dom.tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabId = button.dataset.tab;
+                    dom.tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    dom.tabContents.forEach(content => content.classList.toggle('active', content.id === `tab-content-${tabId}`));
+                });
+            });
         }
         
         // --- INICIALIZAÇÃO ---

@@ -1,9 +1,13 @@
-# app/pharma_seo_optimizer.py (Versão 32.0 - Otimização de Nome Base com Marca)
+# app/pharma_seo_optimizer.py (Versão Corrigida com Controlo de Concorrência)
 import logging
 from typing import List, Optional
 from bs4 import BeautifulSoup
 import re
 from .google_search import GoogleSearch
+import threading
+
+# Ele garantirá que no máximo 5 threads acedam ao bloco de código protegido em simultâneo.
+google_search_limiter = threading.Semaphore(5)
 
 class SeoOptimizerAgent:
     """
@@ -13,10 +17,7 @@ class SeoOptimizerAgent:
 
     @staticmethod
     def _get_base_product_name(product_name_full: str, brand: Optional[str] = None) -> str:
-        """
-        Função utilitária interna para extrair o nome base de um produto,
-        agora com a capacidade de anexar a marca para buscas mais eficazes.
-        """
+        # ... (código existente sem alterações) ...
         logging.info(f"Extraindo nome base de '{product_name_full}' com a marca '{brand}'...")
         try:
             base_name = product_name_full
@@ -52,7 +53,13 @@ class SeoOptimizerAgent:
         simplified_query = SeoOptimizerAgent._get_base_product_name(query, brand=brand)
         logging.info(f"Executando busca 'People Also Ask' para a consulta simplificada: '{simplified_query}'")
         try:
-            search_results = GoogleSearch.search(queries=[f"perguntas sobre {simplified_query}"])
+            # --- INÍCIO DA CORREÇÃO ---
+            # O bloco 'with' garante que a thread espera se 5 outras threads já estiverem
+            # a fazer buscas. Assim que uma termina, esta pode prosseguir.
+            with google_search_limiter:
+                logging.info(f"Semáforo adquirido para 'People Also Ask': {simplified_query}")
+                search_results = GoogleSearch.search(queries=[f"perguntas sobre {simplified_query}"])
+            # --- FIM DA CORREÇÃO ---
             
             if not search_results or not search_results[0].get('related_questions'):
                 logging.warning(f"Nenhuma pergunta 'People Also Ask' encontrada para '{simplified_query}'.")
@@ -76,7 +83,11 @@ class SeoOptimizerAgent:
         simplified_query = SeoOptimizerAgent._get_base_product_name(query, brand=brand)
         logging.info(f"Executando busca de 'Tópicos Relacionados' para a consulta simplificada: '{simplified_query}'")
         try:
-            search_results = GoogleSearch.search(queries=[f"tópicos sobre {simplified_query}"])
+            # --- INÍCIO DA CORREÇÃO ---
+            with google_search_limiter:
+                logging.info(f"Semáforo adquirido para 'Tópicos Relacionados': {simplified_query}")
+                search_results = GoogleSearch.search(queries=[f"tópicos sobre {simplified_query}"])
+            # --- FIM DA CORREÇÃO ---
 
             if not search_results or not search_results[0].get('related_searches'):
                 logging.warning(f"Nenhuma pesquisa relacionada encontrada para '{simplified_query}'.")
@@ -94,9 +105,7 @@ class SeoOptimizerAgent:
 
     @staticmethod
     def _finalize_for_vtex(html_content: str, product_name: str) -> str:
-        """
-        Limpa e formata o conteúdo HTML final para garantir compatibilidade com a VTEX.
-        """
+        # ... (código existente sem alterações) ...
         if not html_content or not isinstance(html_content, str):
             logging.warning("Conteúdo HTML para finalização está vazio ou inválido.")
             return f"<p>Conteúdo para {product_name} não pôde ser gerado.</p>"

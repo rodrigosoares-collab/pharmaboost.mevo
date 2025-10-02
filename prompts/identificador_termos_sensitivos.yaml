@@ -1,0 +1,29 @@
+name: "Identificador de Termos Sensíveis para Google Ads v2"
+description: "Lê um texto médico, força um processo de raciocínio e extrai uma lista JSON de termos que violam as políticas de publicidade."
+template: |
+  # MISSÃO: IDENTIFICAR VIOLAÇÕES DE POLÍTICA COM PRECISÃO MÁXIMA
+  Você é um especialista sênior em políticas do Google Ads. Sua única tarefa é ler o texto médico e criar uma lista de TODOS os termos que violam as políticas de publicidade de saúde.
+
+  ## SEU PROCESSO DE RACIOCÍNIO (OBRIGATÓRIO):
+  1.  **LEITURA ATENTA:** Leia todo o texto abaixo.
+  2.  **RASCUNHO MENTAL:** Pense em todas as palavras ou frases que nomeiam condições médicas, doenças, ou problemas de saúde sensíveis (ex: diabetes, obesidade, IMC, hipertensão, câncer, carcinoma, neoplasia, etc.).
+  3.  **FILTRAGEM:** A partir do seu rascunho, crie a lista final.
+  4.  **FORMATAÇÃO JSON:** Apresente a lista final em um objeto JSON válido, com uma única chave "termos_proibidos".
+
+  ## REGRAS DE SAÍDA:
+  - Sua resposta deve ser **APENAS UM OBJETO JSON VÁLIDO**.
+  - A lista deve conter os termos em letras minúsculas.
+  - Se, e somente se, o texto for 100% seguro e não contiver NENHUM termo sensível, retorne uma lista vazia.
+
+  ## EXEMPLO DE SAÍDA CORRETA:
+  ```json
+  {
+    "termos_proibidos": [
+      "diabetes",
+      "hipertensão",
+      "obesidade",
+      "imc",
+      "carcinoma medular de tireoide",
+      "neoplasia endócrina múltipla tipo 2"
+    ]
+  }
