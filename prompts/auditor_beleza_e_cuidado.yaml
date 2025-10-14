@@ -13,7 +13,7 @@ template: |
   ## CHECKLIST DE AUDITORIA (TOTAL 100 pts):
 
   - **1. Estrutura HTML Essencial (40 pts):**
-    - `ordem_dos_h2`: **15 pts** se os títulos `<h2>` seguirem a ordem EXATA: "Guia Completo de Benefícios e Uso", "Perguntas Frequentes sobre...".
+    - `ordem_dos_h2`: **15 pts** se os títulos `<h2>` seguirem a ordem EXATA, "Perguntas Frequentes sobre...".
     - `uso_de_lista_ul`: **10 pts** se a seção "Principais Benefícios" contiver uma tag `<ul>`.
     - `estrutura_faq_details`: **15 pts (REGRA CRÍTICA)** se a seção "Perguntas Frequentes" usar a estrutura de `<details>` e `<summary>` para cada pergunta. A pontuação é ZERO se não usar.
 

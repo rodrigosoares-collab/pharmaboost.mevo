@@ -1,4 +1,4 @@
-# app/use_cases.py (Versão Final Corrigida)
+# app/use_cases.py (Versão Final Corrigida - Sem alterações necessárias)
 import json
 from typing import Dict, Any, AsyncGenerator, Optional
 import asyncio
@@ -28,6 +28,7 @@ def _extract_json_from_string(text: str) -> Optional[Dict[str, Any]]:
     if match:
         json_str = match.group(1)
     else:
+        
         start_index = text.find('{')
         end_index = text.rfind('}')
         if start_index != -1 and end_index != -1 and end_index > start_index:
@@ -35,6 +36,7 @@ def _extract_json_from_string(text: str) -> Optional[Dict[str, Any]]:
         else:
             return None
     try:
+        # Limpa caracteres de controlo invisíveis que podem quebrar o JSON
         json_str_cleaned = "".join(char for char in json_str if 31 < ord(char) or char in "\n\t\r")
         return json.loads(json_str_cleaned)
     except json.JSONDecodeError as e:
@@ -83,7 +85,8 @@ def _run_sensitive_term_identifier_agent(bula_text: str) -> list:
     return []
 
 def _run_master_generator_agent(product_name: str, product_info: dict) -> Optional[Dict[str, Any]]:
-    prompt = prompt_manager.render("medicamento_generator", product_name=product_name, product_info=product_info)
+    # product_info é passado diretamente, contendo as keywords
+    prompt = prompt_manager.render("medicamento_generator", product_name=product_name, **product_info)
     response_raw = _execute_prompt_with_backoff(prompt, timeout=180)
     return _extract_json_from_string(response_raw) if response_raw else None
 
@@ -93,12 +96,13 @@ def _run_seo_auditor_agent(full_page_json: dict) -> Dict[str, Any]:
     return _extract_json_from_string(response_raw) or {"total_score": 0, "feedback_geral": "Falha na auditoria."}
 
 def _run_refiner_agent(product_name: str, product_info: dict, previous_json: dict, feedback_data: dict) -> Dict[str, Any]:
+    # product_info é passado diretamente, contendo as keywords
     prompt = prompt_manager.render(
         "refinador_qualidade",
         product_name=product_name,
         previous_json=json.dumps(previous_json, ensure_ascii=False),
         analise_automatica_anterior=json.dumps(feedback_data, ensure_ascii=False),
-        product_info=product_info
+        **product_info
     )
     response_raw = _execute_prompt_with_backoff(prompt, timeout=180)
     return _extract_json_from_string(response_raw) or previous_json
@@ -116,6 +120,7 @@ def _run_beauty_generator_agent(product_name: str, product_info: dict) -> Option
         'faq_research_context': faq_research,
         'keyword_research_context': keyword_research
     })
+    # product_info é passado diretamente, contendo as keywords
     prompt = prompt_manager.render("beleza_e_cuidado_generator", product_name=product_name, product_info=product_info)
     response_raw = _execute_prompt_with_backoff(prompt, timeout=120)
     return _extract_json_from_string(response_raw)
@@ -126,6 +131,7 @@ def _run_beauty_auditor_agent(full_page_json: dict) -> Dict[str, Any]:
     return _extract_json_from_string(response_raw) or {"total_score": 0, "feedback_geral": "Falha na auditoria de beleza."}
 
 def _run_beauty_refiner_agent(product_name: str, product_info: dict, previous_json: dict, feedback_data: dict) -> Dict[str, Any]:
+    # product_info é passado diretamente, contendo as keywords
     prompt = prompt_manager.render(
         "refinador_beleza_e_cuidado",
         product_name=product_name,
@@ -180,8 +186,8 @@ async def run_seo_pipeline_stream(
                 current_content_data = await asyncio.to_thread(refiner_agent, product_name, product_info, best_attempt_content, audit_results)
 
             if not current_content_data:
-                yield await _send_event("log", {"message": "❌ Falha na geração de conteúdo.", "type": "error"})
-                break
+                yield await _send_event("log", {"message": f"❌ Falha na geração ou decodificação do conteúdo na tentativa {attempt}. A resposta da IA pode estar malformada.", "type": "warning"})
+                continue # Pula para a próxima tentativa ou sai do loop
 
             audit_results = await asyncio.to_thread(auditor_agent, current_content_data)
             final_score = audit_results.get("total_score", 0)
@@ -193,13 +199,16 @@ async def run_seo_pipeline_stream(
             if final_score >= MIN_SCORE_TARGET:
                 break
         
+        # --- INÍCIO DA CORREÇÃO ---
+        # Verifica se, após todas as tentativas, algum conteúdo foi gerado com sucesso.
         if not best_attempt_content:
-            raise RuntimeError("Falha crítica: Nenhum conteúdo pôde ser gerado.")
+            # Em vez de lançar um erro fatal, envia uma mensagem de log e termina a execução para este item.
+            yield await _send_event("log", {"message": f"❌ <b>Processamento falhou para '{product_name}'.</b> Não foi possível gerar conteúdo válido após {MAX_ATTEMPTS} tentativas.", "type": "error"})
+            return # Termina a função de forma controlada
+        # --- FIM DA CORREÇÃO ---
 
         final_html_vtex_safe = await asyncio.to_thread(SeoOptimizerAgent._finalize_for_vtex, best_attempt_content.get("html_content", ""), product_name)
         
-        # --- CORREÇÃO APLICADA ---
-        # Removida a chave 'product_type', pois não é mais necessária no frontend.
         final_data_for_review = {
             "final_score": highest_score,
             "final_content": final_html_vtex_safe,
@@ -207,7 +216,6 @@ async def run_seo_pipeline_stream(
             "meta_description": str(best_attempt_content.get("meta_description", "")),
             "raw_json_content": best_attempt_content
         }
-        # --- FIM DA CORREÇÃO ---
         
         yield await _send_event("done", final_data_for_review)
 

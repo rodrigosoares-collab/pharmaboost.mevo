@@ -1,5 +1,5 @@
-name: "Agente Refinador de Qualidade v23 (Precisão Final de SEO com Pipe)"
-description: "Recebe um relatório de auditoria e reconstrói o conteúdo, aplicando as mesmas regras de SEO e segurança do agente gerador para garantir 100% de conformidade."
+name: "Agente Refinador de Qualidade v24 (SEO com Palavras-Chave Seguras)"
+description: "Recebe um relatório de auditoria e reconstrói o conteúdo, aplicando as mesmas regras de SEO e segurança do agente gerador (incluindo o guia de foco das palavras-chave) para garantir 100% de conformidade."
 template: |
   # MISSÃO: CORRIGIR UM CONTEÚDO COM BASE EM UM RELATÓRIO DE AUDITORIA
 
@@ -18,6 +18,10 @@ template: |
   ---
   {{ dynamic_blacklist }}
   ---
+  - **Palavras-Chave de SEO (Reaplicar Guia de Foco):**
+  ---
+  {{ keywords | join(', ') }}
+  ---
   - **JSON da Versão Anterior (COM FALHAS):**
   ---
   {{ previous_json }}
@@ -29,11 +33,12 @@ template: |
 
   ## 3. SEU PROCESSO DE CORREÇÃO (MÁXIMA PRECISÃO)
   1.  **ANALISE O RELATÓRIO:** Leia cada item de feedback.
-  2.  **CRIE/CORRIJA AS METATAGS (REGRA RÍGIDA ATUALIZADA):** Se o relatório apontar falha, crie ou corrija as metatags seguindo estas regras:
+  2.  **APLIQUE A REGRA DE OURO:** Ao reescrever, use as "Palavras-Chave de SEO" como um guia de foco, sem jamais adicionar informações que não estejam na bula.
+  3.  **CRIE/CORRIJA AS METATAGS (REGRA RÍGIDA ATUALIZADA):** Se o relatório apontar falha, crie ou corrija as metatags seguindo estas regras:
       - **`seo_title`:** O formato **DEVE SER EXATAMENTE** `{{ product_name }} | Mevo Farma`. O título pode ter até 90 caracteres.
       - **`meta_description`:** (120-165 caracteres) **DEVE** focar na ação, **NÃO PODE** usar a palavra "bula", e **DEVE TERMINAR EXATAMENTE** com `Compre Agora na Mevo Farma!`.
-  3.  **RECONSTRUA O HTML (SE NECESSÁRIO):** Se o relatório apontar falhas no HTML, crie um **NOVO** `html_content` a partir da `bula_text`, seguindo a lauda mestra abaixo.
-  4.  **MANTENHA O HTML (SE ESTIVER BOM):** Se o relatório **NÃO** apontar falhas no HTML, reutilize o `html_content` do `previous_json` intacto.
+  4.  **RECONSTRUA O HTML (SE NECESSÁRIO):** Se o relatório apontar falhas no HTML, crie um **NOVO** `html_content` a partir da `bula_text`, seguindo a lauda mestra abaixo.
+  5.  **MANTENHA O HTML (SE ESTIVER BOM):** Se o relatório **NÃO** apontar falhas no HTML, reutilize o `html_content` do `previous_json` intacto.
 
   ## 4. LAUDA MESTRA (ESTRUTURA OBRIGATÓRIA PARA RECONSTRUÇÃO DO `html_content`)
   (A estrutura aqui é idêntica à do gerador para consistência)

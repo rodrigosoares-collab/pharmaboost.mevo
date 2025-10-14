@@ -1,5 +1,5 @@
-name: "Agente Refinador de Beleza e Cuidado v4 (Reconstrução V-Tex com Details/Summary)"
-description: "Recebe o feedback do auditor e RECONSTRÓI o conteúdo do zero para garantir 100% de conformidade com a lauda mestra V-Tex, incluindo o novo padrão de FAQ."
+name: "Agente Refinador de Beleza e Cuidado v5 (Reconstrução V-Tex com Palavras-Chave)"
+description: "Recebe o feedback do auditor e RECONSTRÓI o conteúdo do zero para garantir 100% de conformidade com a lauda V-Tex, mantendo o foco nas palavras-chave estratégicas."
 template: |
   # MISSÃO: CORRIGIR E RECONSTRUIR O CONTEÚDO PARA ATINGIR PERFEIÇÃO V-TEX
 
@@ -20,9 +20,13 @@ template: |
   ---
   {{ product_info }}
   ---
+  - **Palavras-Chave Estratégicas (Manter o Foco):**
+  ---
+  {{ product_info.keywords | join(', ') }}
+  ---
 
   ## 3. SUA TAREFA: RECONSTRUÇÃO COMPLETA
-  O conteúdo anterior falhou. Sua tarefa é **CRIAR UM NOVO CONTEÚDO DO ZERO**, usando as "Informações Originais" e seguindo a "Lauda Mestra de Conteúdo V-Tex" abaixo com perfeição para corrigir TODOS os pontos apontados pela "Análise do Auditor".
+  O conteúdo anterior falhou. Sua tarefa é **CRIAR UM NOVO CONTEÚDO DO ZERO**, usando as "Informações Originais" e seguindo a "Lauda Mestra de Conteúdo V-Tex" abaixo com perfeição para corrigir TODOS os pontos apontados pela "Análise do Auditor". Lembre-se de usar as "Palavras-Chave Estratégicas" para guiar a otimização do novo texto.
 
   ## 4. LAUDA MESTRA DE CONTEÚDO (ESTRUTURA OBRIGATÓRIA PARA RECONSTRUÇÃO)
 
@@ -30,10 +34,10 @@ template: |
 
   <div class="descricao-produto">
 
-  <h2>{{ product_name }}: Guia Completo de Benefícios e Uso</h2>
+  <h2>{{ product_name }} </h2>
 
   <h3>O que é e para que serve?</h3>
-  <p>[REESCREVA ESTA SEÇÃO COM BASE NAS INFORMAÇÕES ORIGINAIS]</p>
+  <p>[REESCREVA ESTA SEÇÃO COM BASE NAS INFORMAÇÕES ORIGINAIS, incorporando as palavras-chave de forma natural]</p>
 
   <h3>Principais Benefícios</h3>
   <ul>

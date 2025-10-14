@@ -1,4 +1,4 @@
-# api_automatizada.py (Versão Corrigida e Aprimorada)
+# api_automatizada.py (Versão Corrigida e Robusta)
 import logging
 from config import settings
 from config.logging_config import setup_logging
@@ -20,6 +20,8 @@ from fastapi.responses import StreamingResponse
 from pypdf import PdfReader
 from typing import List, Optional, Dict, Any
 import base64
+import fitz  # PyMuPDF
+
 
 from app import use_cases
 
@@ -31,7 +33,7 @@ if not settings.API_KEY or not os.getenv("GOOGLE_API_KEY") or not os.getenv("GOO
 app = FastAPI(
     title="PharmaBoost Automation API",
     description="API para processamento de conteúdo com curadoria humana e feedback loop para IA.",
-    version="31.0-stable"
+    version="32.2-hotfix"
 )
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
@@ -47,6 +49,7 @@ COLUNA_TITULO_SITE = '_TituloSite'
 COLUNA_META_DESCRICAO = '_DescricaoMetaTag'
 COLUNA_DESCRICAO_PRODUTO = '_DescricaoProduto'
 COLUNA_MARCA = '_Marca'
+COLUNA_PALAVRAS_CHAVE = '_PalavrasChave'
 
 COLUNA_CODIGO_BARRAS_CATALOGO = 'CODIGO_BARRAS'
 COLUNA_LINK_BULA = 'BULA'
@@ -75,13 +78,22 @@ async def _send_event(event_type: str, data: dict):
     await asyncio.sleep(0.01)
     return f"event: {event_type}\ndata: {json.dumps(data)}\n\n"
 
+# Adicione esta importação no início do arquivo api_automatizada.py
+import fitz  # PyMuPDF
+
+# ... (resto do código)
+
 def extract_text_from_pdf_bytes(pdf_bytes: bytes) -> str:
-    """Extrai texto de um arquivo PDF fornecido em bytes."""
+    """Extrai texto de um arquivo PDF fornecido em bytes usando PyMuPDF."""
     try:
-        reader = PdfReader(io.BytesIO(pdf_bytes))
-        return "".join(page.extract_text() for page in reader.pages if page.extract_text())
-    except Exception:
-        logging.error("Falha ao extrair texto de bytes de PDF.", exc_info=True)
+        # Abre o PDF a partir dos bytes em memória
+        with fitz.open(stream=pdf_bytes, filetype="pdf") as doc:
+            # Concatena o texto de todas as páginas
+            text = "".join(page.get_text() for page in doc)
+        return text
+    except Exception as e:
+        # Loga o erro específico da extração do PDF
+        logging.error(f"Falha ao extrair texto de bytes de PDF com PyMuPDF: {e}", exc_info=True)
         return ""
 
 def _convert_drive_url_to_download_url(url: str) -> Optional[str]:
@@ -135,9 +147,20 @@ def read_spreadsheet(file_bytes: bytes, filename: str) -> pd.DataFrame:
     try:
         logging.info(f"Lendo a planilha: {filename}")
         if filename.lower().endswith('.csv'):
-            return pd.read_csv(io.BytesIO(file_bytes), encoding='utf-8-sig', sep=',')
+            df = pd.read_csv(io.BytesIO(file_bytes), encoding='utf-8-sig', sep=',')
         else:
-            return pd.read_excel(io.BytesIO(file_bytes), engine='openpyxl')
+            df = pd.read_excel(io.BytesIO(file_bytes), engine='openpyxl')
+        
+        # --- INÍCIO DA CORREÇÃO ---
+        # Substitui todos os valores NaN (células vazias) por uma string vazia
+        # Isso evita que o pandas converta valores nulos para a string "nan"
+        df = df.fillna('')
+        # --- FIM DA CORREÇÃO ---
+        
+        if COLUNA_EAN_SKU in df.columns:
+            df[COLUNA_EAN_SKU] = df[COLUNA_EAN_SKU].astype(str).str.strip()
+        return df
+
     except Exception as e:
         logging.error(f"Não foi possível ler a planilha '{filename}'.", exc_info=True)
         raise ValueError(f"Não foi possível ler a planilha '{filename}'. Erro: {e}")
@@ -170,6 +193,15 @@ async def batch_process_stream(
                 nome_produto = str(row.get(COLUNA_NOME_PRODUTO, 'N/A'))
                 marca_produto = str(row.get(COLUNA_MARCA, ''))
                 
+                # --- INÍCIO DA CORREÇÃO ---
+                # Garante que a string 'nan' não seja processada como uma palavra-chave
+                keywords_str = str(row.get(COLUNA_PALAVRAS_CHAVE, '')).replace(';', ',')
+                keywords_list = [k.strip() for k in keywords_str.split(',') if k.strip() and k.strip().lower() != 'nan'] if keywords_str else []
+                # --- FIM DA CORREÇÃO ---
+                
+                if keywords_list:
+                    logging.info(f"Palavras-chave para SKU {ean_sku}: {keywords_list}")
+                
                 try:
                     counter[0] += 1
                     await queue.put(await _send_event("progress", {"current": counter[0], "total": total_items, "sku": ean_sku}))
@@ -187,7 +219,8 @@ async def batch_process_stream(
                         
                         bula_text = await get_bula_text_from_link(ean_sku, link_bula)
                         if not bula_text.strip(): raise ValueError("Falha ao ler o PDF da bula.")
-                        product_info = {"bula_text": bula_text, "brand": marca_produto}
+                        
+                        product_info = {"bula_text": bula_text, "brand": marca_produto, "keywords": keywords_list}
                     
                     else: # pipeline_type == "beauty"
                         descricao_html = row.get(COLUNA_DESCRICAO_PRODUTO, "")
@@ -198,7 +231,7 @@ async def batch_process_stream(
                         - Informações Adicionais: {descricao_texto_puro}
                         - Contexto Geral do Cliente: {ctx_text if ctx_text else "Nenhum contexto adicional fornecido."}
                         """
-                        product_info = {"context_text": contexto_enriquecido, "brand": marca_produto}
+                        product_info = {"context_text": contexto_enriquecido, "brand": marca_produto, "keywords": keywords_list}
 
                     async for chunk in use_cases.run_seo_pipeline_stream(pipeline_type, nome_produto, product_info):
                         if "event: done" in chunk:
@@ -221,8 +254,13 @@ async def batch_process_stream(
             if is_medicine_batch:
                 yield await _send_event("log", {"message": "<b>Catálogo detectado.</b> Iniciando processamento em modo MEDICAMENTO.", "type": "info"})
                 df_catalogo = read_spreadsheet(cat_bytes, "catalogo.xlsx")
-                df_catalogo.columns = [str(col).strip().upper() for col in df_catalogo.columns]
-                df_catalogo[COLUNA_CODIGO_BARRAS_CATALOGO] = df_catalogo[COLUNA_CODIGO_BARRAS_CATALOGO].astype(str)
+                
+                df_catalogo.columns = [str(col).replace('\ufeff', '').strip().upper() for col in df_catalogo.columns]
+                
+                if COLUNA_CODIGO_BARRAS_CATALOGO in df_catalogo.columns:
+                    df_catalogo[COLUNA_CODIGO_BARRAS_CATALOGO] = df_catalogo[COLUNA_CODIGO_BARRAS_CATALOGO].astype(str).str.strip()
+                else:
+                    raise ValueError(f"A coluna '{COLUNA_CODIGO_BARRAS_CATALOGO}' não foi encontrada no arquivo de catálogo.")
             else:
                 yield await _send_event("log", {"message": "<b>Catálogo não fornecido.</b> Iniciando processamento em modo BELEZA.", "type": "info"})
 
@@ -258,11 +296,10 @@ async def batch_process_stream(
             yield await _send_event("log", {"message": "<b>Montando o rascunho para curadoria...</b>", "type": "info"})
             
             df_itens_original = read_spreadsheet(it_bytes, it_filename)
-            df_itens_original[COLUNA_EAN_SKU] = df_itens_original[COLUNA_EAN_SKU].astype(str)
             
             for res in resultados_finais:
                 sku = str(res.get(COLUNA_EAN_SKU))
-                mask = df_itens_original[COLUNA_EAN_SKU].str.strip() == sku.strip()
+                mask = df_itens_original[COLUNA_EAN_SKU] == sku
                 df_itens_original.loc[mask, COLUNA_TITULO_SITE] = res.get("seo_title", "Erro")
                 df_itens_original.loc[mask, COLUNA_META_DESCRICAO] = res.get("meta_description", "Erro")
                 df_itens_original.loc[mask, COLUNA_DESCRICAO_PRODUTO] = res.get("final_content", "Erro")
@@ -294,7 +331,7 @@ async def process_manual_single_stream(product_name: str = Form(...), ean_sku: s
 
             yield await _send_event("log", {"message": f"PDF da bula lido com sucesso.", "type": "success"})
 
-            async for chunk in use_cases.run_seo_pipeline_stream("medicine", product_name, {"bula_text": bula_text}):
+            async for chunk in use_cases.run_seo_pipeline_stream("medicine", product_name, {"bula_text": bula_text, "keywords": []}):
                 if "event: done" in chunk:
                     final_data = json.loads(chunk.split('data: ')[1])
                     final_data.update({COLUNA_EAN_SKU: ean_sku, COLUNA_NOME_PRODUTO: product_name})
@@ -320,29 +357,22 @@ async def finalize_spreadsheet(approved_data_json: str = Form(...), spreadsheet:
 
         df_updates = pd.DataFrame(approved_data)
         
-        # --- LÓGICA CORRIGIDA ---
-        # 1. Renomeia as colunas de 'updates' ANTES de qualquer outra operação.
         df_updates.rename(columns={'sku': COLUNA_EAN_SKU, 'seoTitle': COLUNA_TITULO_SITE, 'metaDescription': COLUNA_META_DESCRICAO, 'htmlContent': COLUNA_DESCRICAO_PRODUTO}, inplace=True)
         df_updates[COLUNA_EAN_SKU] = df_updates[COLUNA_EAN_SKU].astype(str).str.strip()
         
-        # 2. Filtra a planilha base para manter APENAS os SKUs aprovados.
         approved_skus = df_updates[COLUNA_EAN_SKU].unique()
         df_approved_only = df_base[df_base[COLUNA_EAN_SKU].isin(approved_skus)].copy()
         
-        # 3. Atualiza os dados na planilha já filtrada.
         df_approved_only.set_index(COLUNA_EAN_SKU, inplace=True)
         df_updates.set_index(COLUNA_EAN_SKU, inplace=True)
         df_approved_only.update(df_updates)
         df_approved_only.reset_index(inplace=True)
         
-        # 4. Garante que todas as colunas do modelo V-TEX existam.
         for col in COLUNAS_MODELO_XLS:
             if col not in df_approved_only.columns:
                 df_approved_only[col] = None
         
-        # 5. Organiza as colunas na ordem correta e exporta.
         df_final = df_approved_only[COLUNAS_MODELO_XLS]
-        # --- FIM DA CORREÇÃO ---
 
         output_buffer = io.BytesIO()
         df_final.to_excel(output_buffer, index=False)
@@ -375,27 +405,42 @@ async def finalize_disapproved_spreadsheet(spreadsheet: UploadFile = File(...), 
 @app.post("/reprocess-items")
 async def reprocess_items(
     items_to_reprocess_json: str = Form(...),
+    original_items_file: UploadFile = File(...),
     catalog_file: Optional[UploadFile] = File(None),
     context_file: Optional[UploadFile] = File(None) 
 ):
-    """Reprocessa itens reprovados, usando feedback e a mesma lógica de detecção de tipo."""
+    """Reprocessa itens reprovados, usando feedback e recuperando as palavras-chave da planilha original."""
     try:
         items_to_reprocess = json.loads(items_to_reprocess_json)
+        original_items_bytes = await original_items_file.read()
+        original_items_filename = original_items_file.filename
+        
         catalog_bytes = await catalog_file.read() if catalog_file else None
         context_text = (await context_file.read()).decode('utf-8', errors='ignore') if context_file else None
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro ao ler dados para reprocessamento: {e}")
 
-    async def event_stream(it_to_reprocess, cat_bytes, ctx_text):
+    async def event_stream(it_to_reprocess, orig_it_bytes, orig_it_filename, cat_bytes, ctx_text):
         is_medicine_batch = cat_bytes is not None
         pipeline_type = "medicine" if is_medicine_batch else "beauty"
         
+        try:
+            df_original_items = read_spreadsheet(orig_it_bytes, orig_it_filename)
+            df_original_items[COLUNA_EAN_SKU] = df_original_items[COLUNA_EAN_SKU].astype(str).str.strip()
+        except Exception as e:
+            logging.error(f"Falha ao ler a planilha original para reprocessamento: {e}")
+            yield await _send_event("log", {"message": f"<b>ERRO CRÍTICO:</b> Não foi possível ler a planilha original '{orig_it_filename}'. O reprocessamento não pode continuar.", "type": "error"})
+            return
+
         df_catalogo = None
         if is_medicine_batch:
             logging.info("REPROCESSAMENTO: Catálogo detectado. Usando pipeline de MEDICAMENTO.")
             df_catalogo = read_spreadsheet(cat_bytes, "catalogo.xlsx")
-            df_catalogo.columns = [str(col).strip().upper() for col in df_catalogo.columns]
-            df_catalogo[COLUNA_CODIGO_BARRAS_CATALOGO] = df_catalogo[COLUNA_CODIGO_BARRAS_CATALOGO].astype(str)
+            
+            df_catalogo.columns = [str(col).replace('\ufeff', '').strip().upper() for col in df_catalogo.columns]
+            
+            if COLUNA_CODIGO_BARRAS_CATALOGO in df_catalogo.columns:
+                df_catalogo[COLUNA_CODIGO_BARRAS_CATALOGO] = df_catalogo[COLUNA_CODIGO_BARRAS_CATALOGO].astype(str).str.strip()
         else:
             logging.info("REPROCESSAMENTO: Catálogo não fornecido. Usando pipeline de BELEZA.")
 
@@ -406,6 +451,17 @@ async def reprocess_items(
             previous_content = json.loads(item.get("rawJsonContent", "{}"))
             
             try:
+                item_row = df_original_items.loc[df_original_items[COLUNA_EAN_SKU] == ean_sku]
+                if item_row.empty:
+                    logging.warning(f"SKU {ean_sku} não encontrado na planilha original durante o reprocessamento. As palavras-chave não serão usadas.")
+                    keywords_list = []
+                else:
+                    # Aplicando a mesma lógica robusta para reprocessamento
+                    keywords_str = str(item_row.iloc[0].get(COLUNA_PALAVRAS_CHAVE, '')).replace(';', ',')
+                    keywords_list = [k.strip() for k in keywords_str.split(',') if k.strip() and k.strip().lower() != 'nan'] if keywords_str else []
+                    if keywords_list:
+                        logging.info(f"Palavras-chave (reprocessamento) para SKU {ean_sku}: {keywords_list}")
+
                 product_info = {}
                 if pipeline_type == "medicine":
                     if df_catalogo is None: raise ValueError("Catálogo de bulas é obrigatório para reprocessar medicamentos.")
@@ -417,9 +473,9 @@ async def reprocess_items(
                     
                     bula_text = await get_bula_text_from_link(ean_sku, link_bula)
                     if not bula_text.strip(): raise ValueError("Falha ao ler o PDF da bula.")
-                    product_info = {"bula_text": bula_text}
+                    product_info = {"bula_text": bula_text, "keywords": keywords_list}
                 else: # pipeline_type == "beauty"
-                    product_info = {"context_text": ctx_text if ctx_text else "Nenhum contexto adicional fornecido."}
+                    product_info = {"context_text": ctx_text if ctx_text else "Nenhum contexto adicional fornecido.", "keywords": keywords_list}
 
                 async for chunk in use_cases.run_seo_pipeline_stream(pipeline_type, nome_produto, product_info, previous_content=previous_content, feedback_text=feedback):
                     if "event: done" in chunk:
@@ -432,4 +488,4 @@ async def reprocess_items(
                 logging.warning(f"Falha no reprocessamento do SKU {ean_sku}: {e}")
                 yield await _send_event("log", {"message": f"<b>[SKU: {ean_sku}]</b> Falha no reprocessamento. Motivo: {e}", "type": "error"})
 
-    return StreamingResponse(event_stream(items_to_reprocess, catalog_bytes, context_text), media_type="text/event-stream")
+    return StreamingResponse(event_stream(items_to_reprocess, original_items_bytes, original_items_filename, catalog_bytes, context_text), media_type="text/event-stream")
