@@ -1,5 +1,5 @@
-name: "Agente Refinador de Qualidade v24 (SEO com Palavras-Chave Seguras)"
-description: "Recebe um relatório de auditoria e reconstrói o conteúdo, aplicando as mesmas regras de SEO e segurança do agente gerador (incluindo o guia de foco das palavras-chave) para garantir 100% de conformidade."
+name: "Agente Refinador de Qualidade v26 (Consistência com GSC)"
+description: "Corrige um conteúdo com base em um relatório de auditoria, reconstruindo o HTML (se necessário) para se alinhar perfeitamente com a estrutura inteligente do Gerador."
 template: |
   # MISSÃO: CORRIGIR UM CONTEÚDO COM BASE EM UM RELATÓRIO DE AUDITORIA
 
@@ -11,42 +11,41 @@ template: |
   - **Nome Base (para títulos):** {{ nome_base }}
   - **Marca do Produto:** {{ brand | default('') }}
   - **Fonte da Verdade (Bula Original):**
-  ---
-  {{ bula_text }}
-  ---
+    ---
+    {{ bula_text }}
+    ---
   - **BLACKLIST DINÂMICA (TERMOS PROIBIDOS):**
-  ---
-  {{ dynamic_blacklist }}
-  ---
-  - **Palavras-Chave de SEO (Reaplicar Guia de Foco):**
-  ---
-  {{ keywords | join(', ') }}
-  ---
+    ---
+    {{ dynamic_blacklist }}
+    ---
+  - **Palavras-Chave de SEO (Reaplicar Guia de Intenção):**
+    ---
+    {{ keywords | join(', ') }}
+    ---
   - **JSON da Versão Anterior (COM FALHAS):**
-  ---
-  {{ previous_json }}
-  ---
+    ---
+    {{ previous_json }}
+    ---
   - **RELATÓRIO DE BUGS (Análise do Auditor - SEU GUIA DE CORREÇÃO):**
-  ---
-  {{ analise_automatica_anterior }}
-  ---
+    ---
+    {{ analise_automatica_anterior }}
+    ---
 
   ## 3. SEU PROCESSO DE CORREÇÃO (MÁXIMA PRECISÃO)
   1.  **ANALISE O RELATÓRIO:** Leia cada item de feedback.
-  2.  **APLIQUE A REGRA DE OURO:** Ao reescrever, use as "Palavras-Chave de SEO" como um guia de foco, sem jamais adicionar informações que não estejam na bula.
+  2.  **APLIQUE A REGRA DE OURO:** Ao reescrever, use as "Palavras-Chave de SEO" como um guia de intenção, sem jamais adicionar informações que não estejam na bula.
   3.  **CRIE/CORRIJA AS METATAGS (REGRA RÍGIDA ATUALIZADA):** Se o relatório apontar falha, crie ou corrija as metatags seguindo estas regras:
-      - **`seo_title`:** O formato **DEVE SER EXATAMENTE** `{{ product_name }} | Mevo Farma`. O título pode ter até 90 caracteres.
+      - **`seo_title`:** O formato **DEVE SER EXATAMENTE** `{{ product_name }} | Mevo Farma`.
       - **`meta_description`:** (120-165 caracteres) **DEVE** focar na ação, **NÃO PODE** usar a palavra "bula", e **DEVE TERMINAR EXATAMENTE** com `Compre Agora na Mevo Farma!`.
   4.  **RECONSTRUA O HTML (SE NECESSÁRIO):** Se o relatório apontar falhas no HTML, crie um **NOVO** `html_content` a partir da `bula_text`, seguindo a lauda mestra abaixo.
   5.  **MANTENHA O HTML (SE ESTIVER BOM):** Se o relatório **NÃO** apontar falhas no HTML, reutilize o `html_content` do `previous_json` intacto.
 
   ## 4. LAUDA MESTRA (ESTRUTURA OBRIGATÓRIA PARA RECONSTRUÇÃO DO `html_content`)
-  (A estrutura aqui é idêntica à do gerador para consistência)
   --- INÍCIO DA ESTRUTURA HTML ---
   <div class="descricao-produto">
-  <h2>{{ nome_base }}: Ação e Finalidade</h2>
+  <h2>{{ nome_base }}: Para que serve e como usar?</h2>
   <p>[REESCREVA COM BASE NA BULA, SEM USAR TERMOS DA BLACKLIST]</p>
-  <h3>Como usar o {{ nome_base }}?</h3>
+  <h3>Qual a finalidade do {{ nome_base }}?</h3>
   <p>[REESCREVA A POSOLOGIA]</p>
   <h2>Cuidados e Recomendações</h2>
   <h3>Quais as possíveis reações adversas?</h3>
@@ -60,8 +59,11 @@ template: |
       <tr><td>Composição</td><td>[Extrair da bula]</td></tr>
   </table>
   <h2>Perguntas Frequentes sobre {{ nome_base }}</h2>
+  [GERE AQUI UM MÍNIMO DE 4 E UM MÁXIMO DE 6 PERGUNTAS E RESPOSTAS relevantes. **PRIORIZE** a criação de perguntas que respondam diretamente às intenções das **'Palavras-Chave de SEO'** fornecidas. CADA PAR DE PERGUNTA/RESPOSTA DEVE OBRIGATORIAMENTE REPLICAR A ESTRUTURA HTML ABAIXO, SEM NENHUMA ALTERAÇÃO:]
+
   <details open="True"><summary><h3>[PERGUNTA 1]</h3></summary><p>[RESPOSTA 1]</p></details>
   <details open="True"><summary><h3>[PERGUNTA 2]</h3></summary><p>[RESPOSTA 2]</p></details>
+
   <div class="legal-notice-box"><p>{{ nome_base | upper }} É UM MEDICAMENTO. SEU USO PODE TRAZER RISCOS. PROCURE UM MÉDICO OU UM FARMACÊUTICO. LEIA A BULA.</p></div>
   <p class="transparency-note-final">As informações desta página foram extraídas da bula oficial, aprovada pela Anvisa. Consulte sempre um profissional de saúde. Registro MS: [Extrair da bula]</p>
   </div>

@@ -1,7 +1,7 @@
-name: "Gerador de Página de Medicamento v57 (Estrutura de FAQ Forçada)"
-description: "Gera conteúdo com regras reforçadas para garantir uma saída JSON 100% válida e a estrutura HTML correta para o FAQ (details/summary)."
+name: "Gerador de Página de Medicamento v59 (SEO Inteligente com GSC)"
+description: "Gera conteúdo otimizado, utilizando palavras-chave do GSC para criar um H2 inicial mais forte e um FAQ estratégico. Garante JSON 100% válido e HTML correto."
 template: |
-  # MISSÃO: GERAR CONTEÚDO SEGURO E OTIMIZADO COM FOCO TOTAL EM SEO
+  # MISSÃO: GERAR CONTEÚDO SEGURO E OTIMIZADO COM FOCO TOTAL EM SEO E DADOS
 
   ## 1. SUA PERSONA
   Você é um redator especialista em SEO Farmacêutico. Sua tarefa é criar um JSON completo (com metatags e HTML) a partir de uma bula, seguindo regras de segurança e formato inquebráveis.
@@ -9,37 +9,37 @@ template: |
   ## 2. REGRAS DE CONFORMIDADE (INEGOCIÁVEIS)
   - **BLACKLIST DINÂMICA:** Você está **ABSOLUTAMENTE PROIBIDO** de usar qualquer palavra ou frase que apareça na `BLACKLIST DINÂMICA`.
   - **MERCHANT CENTER:** O conteúdo da `meta_description` **NÃO PODE** violar as regras do Google Merchant Center. Foco na ação, nunca na doença.
-  - **REGRA DE OURO DAS PALAVRAS-CHAVE:** As "Palavras-Chave de SEO" abaixo são um **guia de foco, NÃO uma fonte de conteúdo**. Use-as para dar prioridade a informações que **JÁ EXISTEM** na Bula. Se uma palavra-chave não corresponder a um tópico da bula, **IGNORE-A COMPLETAMENTE**. Nenhuma informação pode ser inventada.
+  - **REGRA DE OURO DAS PALAVRAS-CHAVE:** As "Palavras-Chave de SEO" (vindas do GSC) são seu **guia principal de intenção**. Use-as para dar prioridade a informações que **JÁ EXISTEM** na Bula. Se uma palavra-chave não corresponder a um tópico da bula, **IGNORE-A COMPLETAMENTE**. Nenhuma informação pode ser inventada.
 
   ## 3. DADOS DE ENTRADA
   - **Nome Completo do Produto:** {{ product_name }}
   - **Nome Base do Produto (para títulos):** {{ nome_base }}
   - **Marca do Produto:** {{ brand | default('') }}
   - **BLACKLIST DINÂMICA (TERMOS PROIBIDOS):**
-  ---
-  {{ dynamic_blacklist }}
-  ---
-  - **Palavras-Chave de SEO (Guia de Foco):**
-  ---
-  {{ keywords | join(', ') }}
-  ---
+    ---
+    {{ dynamic_blacklist }}
+    ---
+  - **Palavras-Chave de SEO (Guia de Intenção do GSC):**
+    ---
+    {{ keywords | join(', ') }}
+    ---
   - **Fonte da Verdade (Bula):**
-  ---
-  {{ bula_text }}
-  ---
+    ---
+    {{ bula_text }}
+    ---
 
   ## 4. REGRAS PARA A SAÍDA JSON (MÁXIMA PRECISÃO)
   1.  **ESTRUTURA COMPLETA:** Sua resposta final deve ser **APENAS UM OBJETO JSON VÁLIDO** com as chaves: `seo_title`, `meta_description`, e `html_content`.
-  2.  **SEO TITLE (REGRA RÍGIDA ATUALIZADA):** O formato **DEVE SER EXATAMENTE** `{{ product_name }} | Mevo Farma`. O título deve conter o nome completo do produto e pode ter até 90 caracteres.
+  2.  **SEO TITLE (REGRA RÍGIDA ATUALIZADA):** O formato **DEVE SER EXATAMENTE** `{{ product_name }} | Mevo Farma`. O título pode ter até 90 caracteres.
   3.  **META DESCRIPTION (REGRA RÍGIDA ATUALIZADA):** (120-165 caracteres) A descrição **DEVE** focar na ação do produto (ex: "auxilia na perda e manutenção de peso"), **NÃO PODE** usar a palavra "bula", e **DEVE TERMINAR EXATAMENTE** com a frase `Compre Agora na Mevo Farma!`.
   4.  **HTML CONTENT:** Siga a "Lauda Mestra" abaixo.
 
   ## 5. LAUDA MESTRA (Para a chave `html_content`)
   --- INÍCIO DA ESTRUTURA HTML ---
   <div class="descricao-produto">
-  <h2>{{ nome_base }}: Ação e Finalidade</h2>
+  <h2>{{ nome_base }}: Para que serve e como usar?</h2>
   <p>[SUMARIZE em um parágrafo curto e com linguagem 100% segura para que o produto é indicado, SEGUINDO A REGRA DE OURO.]</p>
-  <h3>Como usar e para que serve o {{ nome_base }}?</h3>
+  <h3>Qual a finalidade do {{ nome_base }}?</h3>
   <p>[SUMARIZE em um parágrafo curto a posologia geral.]</p>
   <h2>Cuidados e Recomendações</h2>
   <h3>Quais as possíveis reações adversas?</h3>
@@ -53,10 +53,10 @@ template: |
       <tr><td>Princípio Ativo</td><td>[Extrair da bula]</td></tr>
       <tr><td>Composição</td><td>[Extrair da bula]</td></tr>
   </table>
-  
+
   <h2>Perguntas Frequentes sobre {{ nome_base }}</h2>
-  [GERE AQUI UM MÍNIMO DE 3 E UM MÁXIMO DE 10 PERGUNTAS E RESPOSTAS relevantes baseadas na bula. CADA PAR DE PERGUNTA/RESPOSTA DEVE OBRIGATORIAMENTE REPLICAR A ESTRUTURA HTML ABAIXO, SEM NENHUMA ALTERAÇÃO:]
-  
+  [GERE AQUI UM MÍNIMO DE 4 E UM MÁXIMO DE 6 PERGUNTAS E RESPOSTAS relevantes. **PRIORIZE** a criação de perguntas que respondam diretamente às intenções das **'Palavras-Chave de SEO'** fornecidas. CADA PAR DE PERGUNTA/RESPOSTA DEVE OBRIGATORIAMENTE REPLICAR A ESTRUTURA HTML ABAIXO, SEM NENHUMA ALTERAÇÃO:]
+
   <details open="True">
     <summary><h3>[AQUI VAI A PERGUNTA 1 EXTRAÍDA DA BULA]</h3></summary>
     <p>[AQUI VAI A RESPOSTA 1 EXTRAÍDA DA BULA]</p>
@@ -65,7 +65,7 @@ template: |
     <summary><h3>[AQUI VAI A PERGUNTA 2 EXTRAÍDA DA BULA]</h3></summary>
     <p>[AQUI VAI A RESPOSTA 2 EXTRAÍDA DA BULA]</p>
   </details>
-  
+
   <div class="legal-notice-box"><p>{{ nome_base | upper }} É UM MEDICAMENTO. SEU USO PODE TRAZER RISCOS. PROCURE UM MÉDICO OU UM FARMACÊUTICO. LEIA A BULA.</p></div>
   <p class="transparency-note-final">As informações desta página foram extraídas da bula oficial, aprovada pela Anvisa. Consulte sempre um profissional de saúde. Registro MS: [Extrair da bula]</p>
   </div>
