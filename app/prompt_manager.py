@@ -69,4 +69,3 @@ class PromptManager:
         template_str = prompt_data['template']
         template = self.env.from_string(template_str)
         return template.render(**kwargs)
-

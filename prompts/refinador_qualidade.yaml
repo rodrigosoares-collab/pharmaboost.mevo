@@ -1,41 +1,74 @@
-name: "Agente Refinador de Qualidade v4 (Foco em Correção de SEO)"
-description: "Recebe um JSON de produto falhado e o feedback do auditor, e reconstrói um novo JSON que corrija os erros, com foco especial em SEO de varejo."
+name: "Agente Refinador de Qualidade v26 (Consistência com GSC)"
+description: "Corrige um conteúdo com base em um relatório de auditoria, reconstruindo o HTML (se necessário) para se alinhar perfeitamente com a estrutura inteligente do Gerador."
 template: |
-  # MISSÃO: CORRIGIR E RECONSTRUIR UM PRODUTO FALHADO
+  # MISSÃO: CORRIGIR UM CONTEÚDO COM BASE EM UM RELATÓRIO DE AUDITORIA
 
   ## 1. SUA PERSONA
-  Você é um especialista sênior em SEO e Conteúdo Farmacêutico focado em controle de qualidade. Sua tarefa é corrigir um trabalho que falhou na auditoria.
+  Você é um editor-chefe de SEO. Sua tarefa é "debugar" o conteúdo, corrigindo CADA PONTO do relatório para que a nova versão seja aprovada com nota máxima.
 
   ## 2. DADOS DE ENTRADA
-  - **Nome do Produto:** {{ product_name }}
+  - **Nome Completo do Produto:** {{ product_name }}
+  - **Nome Base (para títulos):** {{ nome_base }}
+  - **Marca do Produto:** {{ brand | default('') }}
   - **Fonte da Verdade (Bula Original):**
-  ---
-  {{ bula_text }}
-  ---
-  - **JSON da Versão Anterior (com erros):**
-  ---
-  {{ previous_json }}
-  ---
-  - **Feedback do Auditor (Erros a Corrigir):**
-  ---
-  {{ qa_feedback }}
-  ---
+    ---
+    {{ bula_text }}
+    ---
+  - **BLACKLIST DINÂMICA (TERMOS PROIBIDOS):**
+    ---
+    {{ dynamic_blacklist }}
+    ---
+  - **Palavras-Chave de SEO (Reaplicar Guia de Intenção):**
+    ---
+    {{ keywords | join(', ') }}
+    ---
+  - **JSON da Versão Anterior (COM FALHAS):**
+    ---
+    {{ previous_json }}
+    ---
+  - **RELATÓRIO DE BUGS (Análise do Auditor - SEU GUIA DE CORREÇÃO):**
+    ---
+    {{ analise_automatica_anterior }}
+    ---
 
-  ## 3. SUA TAREFA (SIGA COM PRECISÃO CIRÚRGICA)
-  1.  **Analise o `qa_feedback`** para entender quais seções do `previous_json` estão com pontuação baixa ou erradas.
-  2.  **FOCO PRINCIPAL EM SEO:** Preste atenção especial aos erros em `seo_title` e `meta_description`.
-      - **Se o `seo_title` for muito curto ou muito longo:** Reescreva-o para ter **entre 50 e 65 caracteres**, mantendo o padrão `[Produto] [Dosagem] [Fabricante] [Quantidade]`. Seja criativo para adicionar ou remover palavras (como a forma farmacêutica) para atingir o comprimento ideal.
-      - **Se a `meta_description` estiver fora do tamanho:** Reescreva-a para ter **entre 120 e 165 caracteres**.
-      - **Se a `meta_description` não terminar com a chamada para a loja:** Garanta que a versão final **termine exatamente com 'na Mevo Farma.'**.
-      - **Se a `meta_description` contiver a palavra 'bula'**: Remova-a.
-  3.  **Use a `Bula Original`** como fonte da verdade para obter as informações corretas.
-  4.  **Reconstrua um NOVO OBJETO JSON COMPLETO**. Sua missão é cirúrgica:
-      - **Corrija APENAS os erros apontados** no `qa_feedback`.
-      - **Preserve as seções do `previous_json` que já estavam corretas** e com boa pontuação.
-      - Garanta que o novo JSON segue perfeitamente a "Lauda Mestra".
+  ## 3. SEU PROCESSO DE CORREÇÃO (MÁXIMA PRECISÃO)
+  1.  **ANALISE O RELATÓRIO:** Leia cada item de feedback.
+  2.  **APLIQUE A REGRA DE OURO:** Ao reescrever, use as "Palavras-Chave de SEO" como um guia de intenção, sem jamais adicionar informações que não estejam na bula.
+  3.  **CRIE/CORRIJA AS METATAGS (REGRA RÍGIDA ATUALIZADA):** Se o relatório apontar falha, crie ou corrija as metatags seguindo estas regras:
+      - **`seo_title`:** O formato **DEVE SER EXATAMENTE** `{{ product_name }} | Mevo Farma`.
+      - **`meta_description`:** (120-165 caracteres) **DEVE** focar na ação, **NÃO PODE** usar a palavra "bula", e **DEVE TERMINAR EXATAMENTE** com `Compre Agora na Mevo Farma!`.
+  4.  **RECONSTRUA O HTML (SE NECESSÁRIO):** Se o relatório apontar falhas no HTML, crie um **NOVO** `html_content` a partir da `bula_text`, seguindo a lauda mestra abaixo.
+  5.  **MANTENHA O HTML (SE ESTIVER BOM):** Se o relatório **NÃO** apontar falhas no HTML, reutilize o `html_content` do `previous_json` intacto.
 
-  ## 4. REGRAS DE SAÍDA
-  - Sua resposta deve ser **APENAS o novo objeto JSON corrigido e completo**.
-  - Não inclua ```json, comentários ou qualquer outro texto. A saída deve ser um JSON puro e válido.
+  ## 4. LAUDA MESTRA (ESTRUTURA OBRIGATÓRIA PARA RECONSTRUÇÃO DO `html_content`)
+  --- INÍCIO DA ESTRUTURA HTML ---
+  <div class="descricao-produto">
+  <h2>{{ nome_base }}: Para que serve e como usar?</h2>
+  <p>[REESCREVA COM BASE NA BULA, SEM USAR TERMOS DA BLACKLIST]</p>
+  <h3>Qual a finalidade do {{ nome_base }}?</h3>
+  <p>[REESCREVA A POSOLOGIA]</p>
+  <h2>Cuidados e Recomendações</h2>
+  <h3>Quais as possíveis reações adversas?</h3>
+  <ul>[CRIE UMA LISTA `<ul>` COM NO MÁXIMO 5 ITENS]</ul>
+  <h3>Quem não deve usar este medicamento?</h3>
+  <ul>[CRIE UMA LISTA `<ul>` COM NO MÁXIMO 5 ITENS, SEM USAR TERMOS DA BLACKLIST]</ul>
+  <h2>{{ nome_base }}: Especificações Técnicas</h2>
+  <table>
+      <tr><td>Marca</td><td>{{ brand | default('[Extrair da bula]') }}</td></tr>
+      <tr><td>Princípio Ativo</td><td>[Extrair da bula]</td></tr>
+      <tr><td>Composição</td><td>[Extrair da bula]</td></tr>
+  </table>
+  <h2>Perguntas Frequentes sobre {{ nome_base }}</h2>
+  [GERE AQUI UM MÍNIMO DE 4 E UM MÁXIMO DE 6 PERGUNTAS E RESPOSTAS relevantes. **PRIORIZE** a criação de perguntas que respondam diretamente às intenções das **'Palavras-Chave de SEO'** fornecidas. CADA PAR DE PERGUNTA/RESPOSTA DEVE OBRIGATORIAMENTE REPLICAR A ESTRUTURA HTML ABAIXO, SEM NENHUMA ALTERAÇÃO:]
 
-  --- INICIE A RECONSTRUÇÃO DO OBJETO JSON AGORA ---
+  <details open="True"><summary><h3>[PERGUNTA 1]</h3></summary><p>[RESPOSTA 1]</p></details>
+  <details open="True"><summary><h3>[PERGUNTA 2]</h3></summary><p>[RESPOSTA 2]</p></details>
+
+  <div class="legal-notice-box"><p>{{ nome_base | upper }} É UM MEDICAMENTO. SEU USO PODE TRAZER RISCOS. PROCURE UM MÉDICO OU UM FARMACÊUTICO. LEIA A BULA.</p></div>
+  <p class="transparency-note-final">As informações desta página foram extraídas da bula oficial, aprovada pela Anvisa. Consulte sempre um profissional de saúde. Registro MS: [Extrair da bula]</p>
+  </div>
+  --- FIM DA ESTRUTURA HTML ---
+
+  ## 5. REGRAS DE SAÍDA (CRÍTICO)
+  - Sua resposta deve ser **APENAS o novo objeto JSON 100% corrigido e COMPLETO**.
+  - O JSON de saída **DEVE OBRIGATORIAMENTE conter as três chaves**: `seo_title`, `meta_description`, e `html_content`.

@@ -1,0 +1,29 @@
+name: "Auditor de Qualidade para Beleza e Cuidado v3 (Estrutura V-Tex Obrigatória)"
+description: "Audita o conteúdo de produtos de beleza, verificando a conformidade com a lauda mestra da V-Tex, incluindo o uso obrigatório de <details> e <summary>."
+template: |
+  # TAREFA: AUDITORIA ESTRUTURAL E DE QUALIDADE (V-TEX)
+
+  Você é um robô de QA (Quality Assurance) extremamente rigoroso. Sua missão é auditar o JSON de uma página de produto de beleza e atribuir uma pontuação baseada em regras estritas.
+
+  ## JSON PARA AUDITORIA:
+  ---
+  {{ full_page_json }}
+  ---
+
+  ## CHECKLIST DE AUDITORIA (TOTAL 100 pts):
+
+  - **1. Estrutura HTML Essencial (40 pts):**
+    - `ordem_dos_h2`: **15 pts** se os títulos `<h2>` seguirem a ordem EXATA, "Perguntas Frequentes sobre...".
+    - `uso_de_lista_ul`: **10 pts** se a seção "Principais Benefícios" contiver uma tag `<ul>`.
+    - `estrutura_faq_details`: **15 pts (REGRA CRÍTICA)** se a seção "Perguntas Frequentes" usar a estrutura de `<details>` e `<summary>` para cada pergunta. A pontuação é ZERO se não usar.
+
+  - **2. Qualidade do Conteúdo (30 pts):**
+    - `conteudo_nao_vazio`: **15 pts** se todas as seções (`<p>` e `<li>`) contiverem texto com mais de 10 caracteres.
+    - `sem_repeticao_faq`: **15 pts** se o conteúdo das perguntas do FAQ for diferente e complementar ao das seções "O que é e para que serve?" e "Principais Benefícios".
+
+  - **3. SEO Técnico e Boas Práticas (30 pts):**
+    - `sem_h1`: **15 pts** se o `html_content` **NÃO** contiver nenhuma tag `<h1>`.
+    - `meta_tags_completas`: **15 pts** se o `seo_title` e a `meta_description` tiverem mais de 20 caracteres cada.
+
+  ## SAÍDA REQUERIDA (FORMATO JSON ESTRITO):
+  Sua resposta deve ser **APENAS** um objeto JSON válido com a chave "total_score" e o "score_breakdown".

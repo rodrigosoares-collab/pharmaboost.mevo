@@ -79,10 +79,8 @@ class StrategyManager:
         """
         Obtém as melhores e piores estratégias do histórico para o tipo de produto.
         """
-        # ---> INÍCIO DA MODIFICAÇÃO <---
         default_success_msg = "Nenhuma estratégia de sucesso registrada. Usando conhecimento geral."
         default_fail_msg = "Nenhuma estratégia de falha registrada."
-        # ---> FIM DA MODIFICAÇÃO <---
 
         ledger = self._read_ledger()
         if not ledger:

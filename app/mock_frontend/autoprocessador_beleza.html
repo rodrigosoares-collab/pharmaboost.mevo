@@ -3,152 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PharmaBoost IA - Curadoria de Conteúdo v18.1</title>
+    <title>PharmaBoost IA - Curadoria de Beleza & Cuidado v1.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Base styles from Mevofarma aesthetic */
-        body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; background-color: #f8fafc; } /* light slate background */
+        /* Estilos consistentes com a interface original */
+        body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; background-color: #f8fafc; }
         .file-label { transition: all 0.2s ease-in-out; }
-
-        /* Loader specific to main action color */
         .loader { border: 4px solid #f3f4f6; border-top: 4px solid #0d9488; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Toast notifications, adjusted for the new palette */
         #toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.75rem; }
         .toast { display: flex; align-items: center; padding: 1rem; border-radius: 0.5rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); transform: translateX(120%); opacity: 0; transition: all 0.4s cubic-bezier(0.21, 1.02, 0.73, 1); min-width: 320px; }
         .toast.show { transform: translateX(0); opacity: 1; }
-        .toast-success { background-color: #f0fdf4; color: #15803d; border-left: 5px solid #22c55e; } /* emerald */
-        .toast-error { background-color: #fef2f2; color: #b91c1c; border-left: 5px solid #ef4444; } /* red */
-        .toast-info { background-color: #f0fdfa; color: #0f766e; border-left: 5px solid #14b8a6; } /* teal info */
-
-        /* Tab buttons - Mevofarma style (filled active tab) */
-        .tab-button {
-            padding: 0.75rem 1.5rem; font-weight: 600; color: #475569; border-radius: 0.5rem 0.5rem 0 0;
-            cursor: pointer; transition: all 0.2s ease; margin-bottom: -2px;
-            background-color: #e2e8f0; /* Light grey background for inactive */
-            border: 1px solid #cbd5e1; /* Slate border */
-            border-bottom: none;
-        }
-        .tab-button.active {
-            color: white;
-            background-color: #0d9488; /* Teal-600 */
-            border-color: #0d9488;
-            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-        }
-        .tab-button:not(.active):hover {
-            background-color: #f0f4f8; /* Slightly darker grey on hover */
-            color: #1e293b; /* Darker text on hover */
-        }
+        .toast-success { background-color: #f0fdf4; color: #15803d; border-left: 5px solid #22c55e; }
+        .toast-error { background-color: #fef2f2; color: #b91c1c; border-left: 5px solid #ef4444; }
+        .toast-info { background-color: #f0fdfa; color: #0f766e; border-left: 5px solid #14b8a6; }
+        .tab-button { padding: 0.75rem 1.5rem; font-weight: 600; color: #475569; border-radius: 0.5rem 0.5rem 0 0; cursor: pointer; transition: all 0.2s ease; margin-bottom: -2px; background-color: #e2e8f0; border: 1px solid #cbd5e1; border-bottom: none; }
+        .tab-button.active { color: white; background-color: #0d9488; border-color: #0d9488; box-shadow: 0 -2px 5px rgba(0,0,0,0.1); }
+        .tab-button:not(.active):hover { background-color: #f0f4f8; color: #1e293b; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-
-        /* Card content collapse/expand */
         .card-content { max-height: 2500px; transition: max-height 0.7s ease-in-out, opacity 0.5s ease-in-out, margin 0.7s ease-in-out, padding 0.7s ease-in-out; overflow: hidden; opacity: 1; margin-top: 1.5rem; border-top: 1px solid #e2e8f0; padding-top: 1.5rem;}
         .card-content.collapsed { max-height: 0; opacity: 0; margin-top: 0; padding-top: 0; border-top: none; }
-
-        /* Progress bar */
         #progress-bar-inner { transition: width 0.3s ease-in-out; }
-
-        /* Input/Textarea focus styles matching Mevofarma's interactive elements */
         textarea, input[type="text"] { transition: all 0.2s ease-in-out; border-color: #cbd5e1; }
-        textarea:focus, input[type="text"]:focus {
-            border-color: #14b8a6; /* Teal-500 */
-            box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.3); /* Softer focus ring */
-            outline: none;
-        }
-        
-        /* Specific button styles for hover effects */
-        .btn-primary {
-            background-color: #0d9488; /* Teal-600 */
-            color: white;
-            transition: all 0.2s ease-in-out;
-        }
-        .btn-primary:hover {
-            background-color: #0f766e; /* Teal-700 */
-            transform: translateY(-2px); /* Slight lift */
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        .btn-secondary-manual {
-            background-color: #14b8a6; /* Teal-500 */
-            color: white;
-            transition: all 0.2s ease-in-out;
-        }
-        .btn-secondary-manual:hover {
-            background-color: #0f766e; /* Teal-700 */
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        .btn-success {
-            background-color: #22c55e; /* Emerald-500 */
-            color: white;
-            transition: all 0.2s ease-in-out;
-        }
-        .btn-success:hover {
-            background-color: #16a34a; /* Emerald-600 */
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        .btn-warning {
-            background-color: #f97316; /* Orange-500 */
-            color: white;
-            transition: all 0.2s ease-in-out;
-        }
-        .btn-warning:hover {
-            background-color: #ea580c; /* Orange-600 */
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        .btn-danger {
-            background-color: #ef4444; /* Red-500 */
-            color: white;
-            transition: all 0.2s ease-in-out;
-        }
-        .btn-danger:hover {
-            background-color: #dc2626; /* Red-600 */
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        .btn-light {
-            background-color: #f1f5f9; /* Slate-100 */
-            color: #1e293b; /* Slate-900 */
-            border: 1px solid #cbd5e1;
-            transition: all 0.2s ease-in-out;
-        }
-        .btn-light:hover {
-            background-color: #e2e8f0; /* Slate-200 */
-            transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-        }
-
-        /* File label specific styles */
-        .file-label {
-            border-color: #cbd5e1; /* Slate-300 */
-            background-color: #f8fafc; /* Slate-50 */
-            transition: all 0.3s ease-in-out;
-        }
-        .file-label:hover {
-            border-color: #14b8a6; /* Teal-500 */
-            background-color: #f0fdfa; /* Teal-50 */
-        }
-        .file-label i {
-            color: #94a3b8; /* Slate-400 */
-            transition: color 0.3s ease-in-out;
-        }
-        .file-label:hover i {
-            color: #14b8a6; /* Teal-500 */
-        }
-        .file-label span {
-            color: #475569; /* Slate-600 */
-            transition: color 0.3s ease-in-out;
-        }
-        .file-label:hover span {
-            color: #0f766e; /* Teal-700 */
-        }
-
+        textarea:focus, input[type="text"]:focus { border-color: #14b8a6; box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.3); outline: none; }
+        .btn-primary { background-color: #0d9488; color: white; transition: all 0.2s ease-in-out; }
+        .btn-primary:hover { background-color: #0f766e; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .btn-secondary-manual { background-color: #14b8a6; color: white; transition: all 0.2s ease-in-out; }
+        .btn-secondary-manual:hover { background-color: #0f766e; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .btn-success { background-color: #22c55e; color: white; transition: all 0.2s ease-in-out; }
+        .btn-success:hover { background-color: #16a34a; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .btn-warning { background-color: #f97316; color: white; transition: all 0.2s ease-in-out; }
+        .btn-warning:hover { background-color: #ea580c; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .btn-danger { background-color: #ef4444; color: white; transition: all 0.2s ease-in-out; }
+        .btn-danger:hover { background-color: #dc2626; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .btn-light { background-color: #f1f5f9; color: #1e293b; border: 1px solid #cbd5e1; transition: all 0.2s ease-in-out; }
+        .btn-light:hover { background-color: #e2e8f0; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+        .file-label { border-color: #cbd5e1; background-color: #f8fafc; transition: all 0.3s ease-in-out; }
+        .file-label:hover { border-color: #14b8a6; background-color: #f0fdfa; }
+        .file-label i { color: #94a3b8; transition: color 0.3s ease-in-out; }
+        .file-label:hover i { color: #14b8a6; }
+        .file-label span { color: #475569; transition: color 0.3s ease-in-out; }
+        .file-label:hover span { color: #0f766e; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -159,7 +58,7 @@
             <h1 class="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-teal-500 to-emerald-500 bg-clip-text text-transparent">
                 PharmaBoost IA
             </h1>
-            <p class="text-slate-500 mt-2 font-medium">Plataforma de Curadoria de Conteúdo v18.1</p>
+            <p class="text-slate-500 mt-2 font-medium">Curadoria de Conteúdo para Beleza & Cuidado v1.2</p>
         </header>
 
         <div class="mb-5 border-b-2 border-slate-300">
@@ -173,22 +72,22 @@
             <h2 class="text-2xl font-bold text-slate-800 border-b border-slate-200 pb-4 flex items-center"><i class="fas fa-rocket mr-3 text-teal-600"></i>Etapa 1: Gerar Rascunhos em Lote</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                    <h3 class="text-lg font-semibold mb-3 text-slate-700">A. Catálogo Geral (.xlsx)</h3>
-                    <label for="catalog-upload" class="file-label border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center h-full text-center cursor-pointer">
-                        <i class="fas fa-database text-4xl mb-3"></i>
-                        <span id="catalog-filename" class="font-semibold">Arraste ou clique para selecionar o catálogo</span>
-                        <span class="text-xs text-slate-500 mt-1">Opcional. Se enviado, o lote será processado como MEDICAMENTO.</span>
-                    </label>
-                    <input type="file" id="catalog-upload" class="hidden" accept=".xlsx">
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold mb-3 text-slate-700">B. Itens a Processar (.xlsx)</h3>
+                    <h3 class="text-lg font-semibold mb-3 text-slate-700">A. Itens a Processar (.xlsx)</h3>
                     <label for="items-upload" class="file-label border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center h-full text-center cursor-pointer">
                          <i class="fas fa-file-excel text-4xl mb-3"></i>
                          <span id="items-filename" class="font-semibold">Arraste ou clique para selecionar os itens</span>
-                         <span class="text-xs text-slate-500 mt-1">Obrigatório.</span>
+                         <span class="text-xs text-slate-500 mt-1">Lembre-se da coluna "_TipoConteudo"</span>
                     </label>
                     <input type="file" id="items-upload" class="hidden" accept=".xlsx">
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-3 text-slate-700">B. Arquivo de Contexto (.txt) <span class="font-normal text-slate-500">(Opcional)</span></h3>
+                    <label for="context-upload" class="file-label border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center h-full text-center cursor-pointer">
+                        <i class="fas fa-lightbulb text-4xl mb-3"></i>
+                        <span id="context-filename" class="font-semibold">Arraste ou clique para adicionar o contexto</span>
+                        <span class="text-xs text-slate-500 mt-1">Guia de branding, benefícios, etc.</span>
+                    </label>
+                    <input type="file" id="context-upload" class="hidden" accept=".txt">
                 </div>
             </div>
             <div id="progress-section" class="hidden pt-4">
@@ -207,12 +106,12 @@
         </main>
 
         <main id="tab-content-manual" class="tab-content bg-white p-6 md:p-8 rounded-b-xl rounded-tr-xl shadow-md space-y-8 mb-10">
-            <h2 class="text-2xl font-bold text-slate-800 border-b border-slate-200 pb-4 flex items-center"><i class="fas fa-file-signature mr-3 text-emerald-600"></i>Processar Item Único com Bula</h2>
+            <h2 class="text-2xl font-bold text-slate-800 border-b border-slate-200 pb-4 flex items-center"><i class="fas fa-file-signature mr-3 text-emerald-600"></i>Processar Item Único</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div class="space-y-6">
                     <div>
                         <label for="manual-product-name" class="block text-sm font-semibold text-slate-600 mb-1">Nome do Produto</label>
-                        <input type="text" id="manual-product-name" placeholder="Ex: Aldazida 50mg Pfizer 30 Comprimidos" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm">
+                        <input type="text" id="manual-product-name" placeholder="Ex: Protetor Solar La Roche Anthelios FPS 80" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm">
                     </div>
                      <div>
                         <label for="manual-ean-sku" class="block text-sm font-semibold text-slate-600 mb-1">EAN / SKU</label>
@@ -220,12 +119,8 @@
                     </div>
                 </div>
                 <div>
-                     <h3 class="text-sm font-semibold text-slate-600 mb-1">Arquivo da Bula (PDF)</h3>
-                     <label for="manual-bula-upload" class="file-label border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center h-full text-center cursor-pointer">
-                        <i class="fas fa-file-pdf text-4xl mb-3"></i>
-                        <span id="manual-bula-filename" class="font-semibold">Selecione o arquivo PDF</span>
-                    </label>
-                    <input type="file" id="manual-bula-upload" class="hidden" accept="application/pdf">
+                     <label for="manual-context" class="block text-sm font-semibold text-slate-600 mb-1">Contexto do Produto <span class="font-normal text-slate-500">(Opcional)</span></label>
+                     <textarea id="manual-context" rows="5" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm" placeholder="Cole aqui benefícios, ingredientes, modo de uso..."></textarea>
                 </div>
             </div>
              <div class="text-center pt-8">
@@ -239,13 +134,13 @@
         <section id="review-section" class="bg-white p-6 md:p-8 rounded-xl shadow-md space-y-8">
             <h2 class="text-2xl font-bold text-slate-800 border-b border-slate-200 pb-4 flex items-center"><i class="fas fa-magic-wand-sparkles mr-3 text-teal-600"></i>Etapa 2: Curadoria e Finalização</h2>
             <div>
-                 <h3 class="text-lg font-semibold mb-2 text-slate-700">C. Planilha Base para Finalização (.xlsx, .csv)</h3>
+                 <h3 class="text-lg font-semibold mb-2 text-slate-700">C. Planilha Base para Finalização (.xlsx)</h3>
                  <p class="text-sm text-slate-500 mb-4">Carregue o rascunho gerado ou a planilha de "Itens a Processar". <b>É obrigatória para gerar os arquivos finais.</b></p>
                  <label for="base-spreadsheet-upload" class="file-label border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer">
                     <i class="fas fa-upload text-4xl mb-3"></i>
                     <span id="base-spreadsheet-filename" class="font-semibold">Arraste ou clique para selecionar a planilha base</span>
                 </label>
-                <input type="file" id="base-spreadsheet-upload" class="hidden" accept=".xlsx, .csv">
+                <input type="file" id="base-spreadsheet-upload" class="hidden" accept=".xlsx">
             </div>
             <div id="log-section" class="hidden mt-6">
                 <h3 class="text-lg font-semibold text-slate-700 mb-2">Log de Processamento</h3>
@@ -378,18 +273,17 @@
         
         // --- ESTADO DA APLICAÇÃO ---
         const state = {
-            catalogFile: null, itemsFile: null, baseSpreadsheetFile: null, manualBulaFile: null,
+            itemsFile: null, contextFile: null, baseSpreadsheetFile: null,
             reviewItems: {},
         };
 
         // --- REFERÊNCIAS AO DOM ---
         const dom = {};
-        
         const domIds = [
-            'catalog-upload', 'catalog-filename', 'items-upload', 'items-filename', 
+            'items-upload', 'items-filename', 'context-upload', 'context-filename',
             'generate-draft-button', 'button-text-lote', 'button-loader-lote', 
             'base-spreadsheet-upload', 'base-spreadsheet-filename', 'manual-product-name', 
-            'manual-ean-sku', 'manual-bula-upload', 'manual-bula-filename', 
+            'manual-ean-sku', 'manual-context',
             'generate-manual-button', 'button-text-manual', 'button-loader-manual', 
             'log-section', 'status-log', 'progress-section', 'progress-label', 
             'progress-percentage', 'progress-bar-inner', 'curation-area', 'review-area', 
@@ -397,14 +291,11 @@
             'finalize-button', 'reprocess-button', 'finalize-disapproved-button', 
             'toast-container', 'search-input', 'collapse-all-button', 'approve-all-button'
         ];
-        
         const toCamelCase = (str) => str.replace(/-([a-z])/g, g => g[1].toUpperCase());
-
         domIds.forEach(id => {
             const camelCaseId = toCamelCase(id);
             dom[camelCaseId] = document.getElementById(id);
         });
-        
         dom.tabButtons = document.querySelectorAll('.tab-button');
         dom.tabContents = document.querySelectorAll('.tab-content');
 
@@ -437,26 +328,19 @@
                     while (true) {
                         const { value, done } = await reader.read();
                         if (done) break;
-                        
                         buffer += decoder.decode(value, { stream: true });
                         let boundary = buffer.indexOf('\n\n');
-
                         while (boundary !== -1) {
                             const message = buffer.substring(0, boundary);
                             buffer = buffer.substring(boundary + 2);
-
                             if (message.trim()) {
                                 const eventLine = message.split('\n').find(line => line.startsWith('event:'));
                                 const dataLine = message.split('\n').find(line => line.startsWith('data:'));
-
                                 if (eventLine && dataLine) {
                                     const event = eventLine.substring(6).trim();
                                     const data = dataLine.substring(5).trim();
-                                    try {
-                                        onEvent(event, JSON.parse(data));
-                                    } catch (e) {
-                                        console.error("Falha ao decodificar o JSON do evento:", data, e);
-                                    }
+                                    try { onEvent(event, JSON.parse(data)); }
+                                    catch (e) { console.error("Falha ao decodificar o JSON do evento:", data, e); }
                                 }
                             }
                             boundary = buffer.indexOf('\n\n');
@@ -484,7 +368,6 @@
                 const loader = flow === 'lote' ? dom.buttonLoaderLote : dom.buttonLoaderManual;
                 const textEl = flow === 'lote' ? dom.buttonTextLote : dom.buttonTextManual;
                 const originalText = flow === 'lote' ? 'Gerar Rascunho' : 'Gerar Conteúdo';
-                
                 btn.disabled = isProcessing;
                 textEl.textContent = isProcessing ? 'Processando...' : originalText;
                 loader.classList.toggle('hidden', !isProcessing);
@@ -503,7 +386,6 @@
                 dom.progressLabel.innerHTML = `Processando: <b>${current} de ${total}</b> (SKU: ${sku})`;
             },
             analyzeHeadings(htmlContent) {
-                if (typeof htmlContent !== 'string') return '';
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(htmlContent, 'text/html');
                 const headings = Array.from(doc.querySelectorAll('h1, h2, h3, h4, h5, h6'));
@@ -518,70 +400,46 @@
             renderCard(item) {
                 const sku = String(item['_EANSKU'] || item.sku || '');
                 const productName = String(item['_NomeProduto (Obrigatório)'] || item.productName || 'Produto sem nome');
-                
-                if (!sku) {
-                    console.error("Item sem SKU/EAN encontrado, não será renderizado:", item);
-                    return;
-                }
-                if (document.getElementById(`card-${sku}`)) return;
-
-                state.reviewItems[sku] = { ...item, sku, productName, status: 'pending' };
-
+                if (!sku || document.getElementById(`card-${sku}`)) return;
+                state.reviewItems[sku] = { ...item, sku, productName, status: 'pending', productType: 'BELEZA' };
                 const template = document.getElementById('review-card-template').content.cloneNode(true);
                 const card = template.firstElementChild;
                 card.id = `card-${sku}`;
                 card.dataset.sku = sku;
                 card.dataset.productName = productName;
-
                 card.querySelector('[data-name="sku"]').textContent = `SKU/EAN: ${sku}`;
                 card.querySelector('[data-name="productName"]').textContent = productName;
                 card.querySelector('[data-name="seoTitle"]').value = item.seo_title || item['_TituloSite'] || "";
                 card.querySelector('[data-name="metaDescription"]').value = item.meta_description || item['_DescricaoMetaTag'] || "";
-                
                 const htmlArea = card.querySelector('[data-name="htmlContent"]');
                 const preview = card.querySelector('[data-name="previewFrame"]');
                 const htmlContent = item.final_content || item['_DescricaoProduto'] || "";
                 htmlArea.value = htmlContent;
-                
-                try {
-                    preview.srcdoc = htmlContent;
-                } catch(e) {
-                    console.warn(`Erro ao setar srcdoc para SKU ${sku}: ${e}`);
-                    preview.srcdoc = `<p>Erro ao renderizar preview.</p>`;
-                }
-                
+                try { preview.srcdoc = htmlContent; } catch(e) { console.warn(`Erro no srcdoc para ${sku}: ${e}`); preview.srcdoc = `<p>Erro no preview.</p>`; }
                 const tagAnalysisDiv = card.querySelector('[data-name="tags-analysis"]');
                 tagAnalysisDiv.innerHTML = ui.analyzeHeadings(htmlContent);
-                
-                htmlArea.oninput = e => {
-                    preview.srcdoc = e.target.value;
-                    tagAnalysisDiv.innerHTML = ui.analyzeHeadings(e.target.value);
-                };
-                
+                htmlArea.oninput = e => { preview.srcdoc = e.target.value; tagAnalysisDiv.innerHTML = ui.analyzeHeadings(e.target.value); };
                 card.querySelector('[data-action="approve"]').onclick = () => handleItemAction(sku, 'approved');
                 card.querySelector('[data-action="disapprove"]').onclick = () => handleItemAction(sku, 'disapproved');
                 card.querySelector('[data-action="toggle"]').onclick = (e) => {
                     const content = card.querySelector('.card-content');
                     content.classList.toggle('collapsed');
-                    e.currentTarget.innerHTML = content.classList.contains('collapsed') 
-                        ? '<i class="fas fa-eye mr-2"></i> Mostrar' 
-                        : '<i class="fas fa-eye-slash mr-2"></i> Ocultar';
+                    e.currentTarget.innerHTML = content.classList.contains('collapsed') ? '<i class="fas fa-eye mr-2"></i> Mostrar' : '<i class="fas fa-eye-slash mr-2"></i> Ocultar';
                 };
-                
                 dom.reviewArea.appendChild(card);
             },
             updateGlobalUI() {
                 const items = Object.values(state.reviewItems);
                 const hasApproved = items.some(i => i.status === 'approved');
                 const hasDisapproved = items.some(i => i.status === 'disapproved');
-
-                dom.finalizeButton.disabled = !hasApproved || !state.baseSpreadsheetFile;
+                dom.finalizeButton.disabled = !hasApproved;
                 dom.reprocessButton.disabled = !hasDisapproved;
-                dom.finalizeDisapprovedButton.disabled = !hasDisapproved || !state.baseSpreadsheetFile;
-                
+                dom.finalizeDisapprovedButton.disabled = !hasDisapproved;
                 dom.approvedSection.classList.toggle('hidden', !hasApproved);
                 dom.disapprovedSection.classList.toggle('hidden', !hasDisapproved);
+                // --- INÍCIO DA CORREÇÃO ---
                 dom.curationArea.classList.toggle('hidden', items.length === 0);
+                // --- FIM DA CORREÇÃO ---
             },
             setupTabs() {
                 dom.tabButtons.forEach(button => {
@@ -607,15 +465,12 @@
             const item = state.reviewItems[sku];
             if (!item) return;
             item.status = newStatus;
-
             const card = document.getElementById(`card-${sku}`);
             const actionsDiv = card.querySelector('[data-name="actions"]');
             const statusBadge = card.querySelector('[data-name="statusBadge"]');
             const feedbackSection = card.querySelector('[data-name="feedback-section"]');
-            
             actionsDiv.classList.add('hidden');
             statusBadge.classList.remove('hidden');
-            
             let badgeHtml = '';
             if (newStatus === 'approved') {
                 badgeHtml = `<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-emerald-100 text-emerald-800">Aprovado</span>`;
@@ -625,55 +480,36 @@
                 badgeHtml = `<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-rose-100 text-rose-800">Reprovado</span>`;
                 dom.disapprovedArea.appendChild(card);
                 feedbackSection.classList.remove('hidden');
-            } else { // 'pending'
+            } else {
                 statusBadge.classList.add('hidden');
                 actionsDiv.classList.remove('hidden');
                 dom.reviewArea.appendChild(card);
                 feedbackSection.classList.add('hidden');
             }
-            
             statusBadge.innerHTML = `${badgeHtml} <button data-action="undo" class="ml-2 text-sm text-teal-600 hover:underline">Desfazer</button>`;
             statusBadge.querySelector('[data-action="undo"]').onclick = () => handleItemAction(sku, 'pending');
-
             ui.updateGlobalUI();
         }
         
-        async function handleGenerate(flow) {
-            let formData = new FormData();
-            let endpoint = '';
-            
-            if (flow === 'lote') {
-                if (!state.itemsFile) return ui.showToast('O arquivo de "Itens a Processar" é obrigatório.', 'error');
-                formData.append('items_file', state.itemsFile);
-                if (state.catalogFile) {
-                    formData.append('catalog_file', state.catalogFile);
-                }
-                endpoint = '/batch-process-and-generate-draft';
-            } else {
-                const productName = dom.manualProductName.value;
-                const eanSku = dom.manualEanSku.value;
-                if (!productName || !eanSku || !state.manualBulaFile) return ui.showToast('Preencha nome, EAN/SKU e anexe a bula.', 'error');
-                formData.append('product_name', productName);
-                formData.append('ean_sku', eanSku);
-                formData.append('bula_file', state.manualBulaFile);
-                endpoint = '/process-manual-single';
-            }
+        async function handleGenerateLote() {
+            if (!state.itemsFile) return ui.showToast('Selecione os "Itens a Processar".', 'error');
+            const formData = new FormData();
+            formData.append('items_file', state.itemsFile);
+            if (state.contextFile) formData.append('context_file', state.contextFile);
 
-            ui.setProcessingState(true, flow);
+            ui.setProcessingState(true, 'lote');
             ui.resetCurationArea();
-            ui.addLogMessage(`Iniciando processamento...`);
-            if (flow === 'lote') dom.progressSection.classList.remove('hidden');
+            dom.statusLog.innerHTML = '';
+            ui.addLogMessage(`Iniciando processamento em lote para Beleza & Cuidado...`);
+            dom.progressSection.classList.remove('hidden');
 
             try {
-                await apiService.streamRequest(endpoint, formData, (event, data) => {
+                await apiService.streamRequest('/batch-process-and-generate-draft', formData, (event, data) => {
                     if (event === 'log') ui.addLogMessage(data.message, data.type);
                     else if (event === 'progress') ui.updateProgressBar(data.current, data.total, data.sku);
-                    else if (event === 'done' || event === 'done_manual') {
-                        ui.renderCard(data); 
-                        ui.updateGlobalUI();
-                    }
+                    else if (event === 'done') { ui.renderCard(data); ui.updateGlobalUI(); }
                     else if (event === 'finished') {
-                        ui.addLogMessage(`<b>Processamento em lote concluído!</b> Baixando rascunho.`, 'success');
+                        ui.addLogMessage(`<b>Processamento concluído!</b> Baixando rascunho.`, 'success');
                         const blob = base64ToBlob(data.file_data, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
                         downloadBlob(blob, data.filename);
                         ui.showToast('Rascunho gerado. Carregue-o na Etapa 2.', 'success');
@@ -683,23 +519,67 @@
                 ui.addLogMessage(error.message, 'error');
                 ui.showToast(error.message, 'error');
             } finally {
-                ui.setProcessingState(false, flow);
-                if(flow === 'lote') dom.progressSection.classList.add('hidden');
+                ui.setProcessingState(false, 'lote');
+                dom.progressSection.classList.add('hidden');
             }
         }
         
-        async function handleFinalize(type) {
-            if (!state.baseSpreadsheetFile) {
-                 return ui.showToast(`Carregue a "Planilha Base para Finalização" para continuar.`, 'error');
+        async function handleGenerateManual() {
+            const productName = dom.manualProductName.value;
+            const eanSku = dom.manualEanSku.value;
+            if (!productName || !eanSku) return ui.showToast('Preencha nome e EAN/SKU.', 'error');
+            
+            const worksheet = XLSX.utils.json_to_sheet([{
+                '_EANSKU': eanSku,
+                '_NomeProduto (Obrigatório)': productName,
+                '_TipoConteudo': 'BELEZA',
+                '_TituloSite': '', 
+                '_DescricaoMetaTag': ''
+            }]);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+            const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+            const itemsFile = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+            const formData = new FormData();
+            formData.append('items_file', itemsFile, 'manual_item.xlsx');
+
+            const contextText = dom.manualContext.value;
+            if (contextText.trim()) {
+                const contextFile = new Blob([contextText], { type: 'text/plain' });
+                formData.append('context_file', contextFile, 'manual_context.txt');
             }
 
-            const itemsToFinalize = Object.values(state.reviewItems).filter(i => i.status === type);
-            if (itemsToFinalize.length === 0) {
-                return ui.showToast(`Nenhum item ${type} para finalizar.`, 'info');
+            ui.setProcessingState(true, 'manual');
+            ui.resetCurationArea();
+            dom.statusLog.innerHTML = '';
+            ui.addLogMessage(`Iniciando processamento manual para SKU ${eanSku}...`);
+            
+            try {
+                 await apiService.streamRequest('/batch-process-and-generate-draft', formData, (event, data) => {
+                    if (event === 'log') {
+                        ui.addLogMessage(data.message, data.type);
+                    } else if (event === 'done') {
+                        // O evento 'done' é o sinal para renderizar o card
+                        ui.renderCard(data);
+                        ui.updateGlobalUI();
+                        ui.showToast('Conteúdo gerado para revisão.', 'success');
+                    }
+                });
+            } catch (error) {
+                ui.addLogMessage(error.message, 'error');
+                ui.showToast(error.message, 'error');
+            } finally {
+                ui.setProcessingState(false, 'manual');
             }
+        }
+
+        async function handleFinalize(type) {
+            if (!state.baseSpreadsheetFile) return ui.showToast(`Carregue a "Planilha Base" para continuar.`, 'error');
+            const itemsToFinalize = Object.values(state.reviewItems).filter(i => i.status === type);
+            if (itemsToFinalize.length === 0) return ui.showToast(`Nenhum item ${type} para finalizar.`, 'info');
 
             ui.showToast(`Gerando planilha para ${itemsToFinalize.length} item(ns)...`, 'info');
-
             const cleanData = itemsToFinalize.map(item => {
                 const card = document.getElementById(`card-${item.sku}`);
                 return {
@@ -709,18 +589,15 @@
                     htmlContent: card.querySelector('[data-name="htmlContent"]').value,
                 };
             });
-            
             const formData = new FormData();
             const endpoint = type === 'approved' ? '/finalize-spreadsheet' : '/finalize-disapproved-spreadsheet';
             const jsonKey = type === 'approved' ? 'approved_data_json' : 'disapproved_data_json';
-            
             formData.append(jsonKey, JSON.stringify(cleanData));
             formData.append('spreadsheet', state.baseSpreadsheetFile);
-
             try {
                 const blob = await apiService.postRequest(endpoint, formData);
-                downloadBlob(blob, `planilha_${type}s.xlsx`);
-                ui.showToast(`Planilha de ${type}s gerada com sucesso!`, 'success');
+                downloadBlob(blob, `planilha_beleza_${type}s.xlsx`);
+                ui.showToast(`Planilha de ${type}s gerada!`, 'success');
             } catch (error) {
                 ui.addLogMessage(error.message, 'error');
                 ui.showToast(error.message, 'error');
@@ -732,36 +609,31 @@
             if (itemsToReprocess.length === 0) return ui.showToast('Não há itens reprovados para reprocessar.', 'info');
             
             const formData = new FormData();
-            // A decisão MEDICAMENTO vs BELEZA é do backend baseada neste arquivo.
-            if (state.catalogFile) {
-                formData.append('catalog_file', state.catalogFile);
-            }
+            if (state.contextFile) formData.append('context_file', state.contextFile);
 
             ui.addLogMessage(`<b>Iniciando reprocessamento para ${itemsToReprocess.length} item(ns)...</b>`, 'info');
-            
             const itemsToSubmit = itemsToReprocess.map(item => {
                 const card = document.getElementById(`card-${item.sku}`);
-                card.remove(); // Remove o card antigo da UI
+                card.remove(); 
+                const rawJsonContent = state.reviewItems[item.sku]?.raw_json_content;
                 return {
                     sku: item.sku,
                     productName: item.productName,
+                    productType: 'BELEZA',
                     feedback: card.querySelector('[data-name="feedbackText"]').value,
-                    rawJsonContent: item.raw_json_content ? JSON.stringify(item.raw_json_content) : '{}'
+                    rawJsonContent: rawJsonContent ? JSON.stringify(rawJsonContent) : "{}"
                 };
             });
 
-            // Remove os itens da lista principal de uma vez
             itemsToSubmit.forEach(item => delete state.reviewItems[item.sku]);
             ui.updateGlobalUI();
-
             formData.append('items_to_reprocess_json', JSON.stringify(itemsToSubmit));
             
             try {
                 await apiService.streamRequest('/reprocess-items', formData, (event, data) => {
                     if (event === 'log') ui.addLogMessage(data.message, data.type);
                     else if (event === 'done') {
-                        const sku = data['_EANSKU'];
-                        ui.addLogMessage(`Conteúdo regenerado para SKU ${sku}. Movido para revisão.`, 'success');
+                        ui.addLogMessage(`Conteúdo regenerado para SKU ${data['_EANSKU']}.`, 'success');
                         ui.renderCard(data);
                     }
                 });
@@ -777,53 +649,37 @@
         function setupEventListeners() {
             const handleFileUpload = (e, stateKey, filenameEl) => {
                 const file = e.target.files[0];
-                if (file) {
-                    state[stateKey] = file;
-                    filenameEl.textContent = file.name;
-                } else {
-                    // Manter o nome do arquivo se o usuário cancelar a seleção
-                }
+                const originalText = filenameEl.innerHTML;
+                if (file) { state[stateKey] = file; filenameEl.textContent = file.name; } 
+                else { state[stateKey] = null; filenameEl.innerHTML = originalText; }
             };
             
-            dom.catalogUpload.onchange = e => handleFileUpload(e, 'catalogFile', dom.catalogFilename);
             dom.itemsUpload.onchange = e => handleFileUpload(e, 'itemsFile', dom.itemsFilename);
-            dom.manualBulaUpload.onchange = e => handleFileUpload(e, 'manualBulaFile', dom.manualBulaFilename);
-
+            dom.contextUpload.onchange = e => handleFileUpload(e, 'contextFile', dom.contextFilename);
             dom.baseSpreadsheetUpload.onchange = e => { 
                 handleFileUpload(e, 'baseSpreadsheetFile', dom.baseSpreadsheetFilename);
                 if (state.baseSpreadsheetFile) {
-                    ui.showToast('Planilha base carregada para curadoria.', 'success');
+                    ui.showToast('Planilha base carregada. Itens prontos para curadoria.', 'success');
                     const reader = new FileReader();
                     reader.onload = (event) => {
                         try {
                             const data = new Uint8Array(event.target.result);
                             const workbook = XLSX.read(data, { type: 'array' });
-                            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                            const json = XLSX.utils.sheet_to_json(worksheet);
-                            
-                            if (json.length === 0) {
-                                throw new Error("A planilha parece estar vazia ou em um formato não reconhecido.");
-                            }
-                            
+                            const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                            if (json.length === 0) throw new Error("Planilha vazia ou em formato incorreto.");
                             ui.resetCurationArea();
                             json.forEach(ui.renderCard);
                             ui.updateGlobalUI();
                         } catch (readError) {
-                            const errorMessage = `Erro ao ler o arquivo. Verifique o formato. Detalhe: ${readError.message}`;
-                            ui.showToast(errorMessage, 'error');
-                            console.error(readError);
+                            ui.showToast(`Erro ao ler o arquivo: ${readError.message}`, 'error');
                         }
-                    };
-                    reader.onerror = (error) => {
-                        ui.showToast('Não foi possível ler o arquivo.', 'error');
-                        console.error("FileReader error:", error);
                     };
                     reader.readAsArrayBuffer(state.baseSpreadsheetFile);
                 }
             };
             
-            dom.generateDraftButton.onclick = () => handleGenerate('lote');
-            dom.generateManualButton.onclick = () => handleGenerate('manual');
+            dom.generateDraftButton.onclick = handleGenerateLote;
+            dom.generateManualButton.onclick = handleGenerateManual;
             dom.finalizeButton.onclick = () => handleFinalize('approved');
             dom.finalizeDisapprovedButton.onclick = () => handleFinalize('disapproved');
             dom.reprocessButton.onclick = handleReprocess;
@@ -835,21 +691,14 @@
             dom.collapseAllButton.onclick = (e) => {
                 const button = e.currentTarget;
                 const isCollapsing = button.dataset.state !== 'collapsed';
-                document.querySelectorAll('#review-area .card-content, #approved-area .card-content, #disapproved-area .card-content').forEach(content => {
+                document.querySelectorAll('.card-content').forEach(content => {
                     const card = content.closest('.p-5');
                     const toggleButton = card.querySelector('[data-action="toggle"]');
-                    if (isCollapsing) {
-                        content.classList.add('collapsed');
-                        toggleButton.innerHTML = '<i class="fas fa-eye mr-2"></i> Mostrar';
-                    } else {
-                        content.classList.remove('collapsed');
-                        toggleButton.innerHTML = '<i class="fas fa-eye-slash mr-2"></i> Ocultar';
-                    }
+                    if (isCollapsing) { content.classList.add('collapsed'); toggleButton.innerHTML = '<i class="fas fa-eye mr-2"></i> Mostrar'; } 
+                    else { content.classList.remove('collapsed'); toggleButton.innerHTML = '<i class="fas fa-eye-slash mr-2"></i> Ocultar'; }
                 });
                 button.dataset.state = isCollapsing ? 'collapsed' : 'expanded';
-                button.innerHTML = isCollapsing 
-                    ? '<i class="fas fa-expand-alt mr-2"></i>Expandir Todos' 
-                    : '<i class="fas fa-compress-alt mr-2"></i>Recolher Todos';
+                button.innerHTML = isCollapsing ? '<i class="fas fa-expand-alt mr-2"></i>Expandir Todos' : '<i class="fas fa-compress-alt mr-2"></i>Recolher Todos';
             };
             dom.searchInput.oninput = (e) => {
                 const query = e.target.value.toLowerCase().trim();
@@ -859,14 +708,6 @@
                     card.style.display = (name.includes(query) || sku.includes(query)) ? '' : 'none';
                 });
             };
-            dom.tabButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const tabId = button.dataset.tab;
-                    dom.tabButtons.forEach(btn => btn.classList.remove('active'));
-                    button.classList.add('active');
-                    dom.tabContents.forEach(content => content.classList.toggle('active', content.id === `tab-content-${tabId}`));
-                });
-            });
         }
         
         // --- INICIALIZAÇÃO ---

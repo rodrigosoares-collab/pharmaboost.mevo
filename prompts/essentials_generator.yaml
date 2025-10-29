@@ -22,7 +22,7 @@ template: |
       - Qual a composição do {{ product_name }}?
   2.  Crie um HTML simples e limpo, usando `<h2>` para os títulos de cada seção e `<p>` ou `<ul>` para o conteúdo.
   3.  **NÃO TENTE CRIAR A ESTRUTURA COMPLETA.** Apenas o básico é necessário.
-  4.  Inclua uma tabela de especificações simples com "Fabricante" e "Princípio Ativo".
+  4.  Inclua uma tabela de especificações simples com "Fabricante", "EAN SKU " e "Princípio Ativo".
 
   ## 4. REGRAS DE SAÍDA
   - Sua resposta deve ser **APENAS o código HTML**. Sem JSON, sem comentários, sem ```html.
