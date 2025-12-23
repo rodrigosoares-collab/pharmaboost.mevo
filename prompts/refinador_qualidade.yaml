@@ -1,5 +1,5 @@
-name: "Agente Refinador de Qualidade v26 (Consistência com GSC)"
-description: "Corrige um conteúdo com base em um relatório de auditoria, reconstruindo o HTML (se necessário) para se alinhar perfeitamente com a estrutura inteligente do Gerador."
+name: "Agente Refinador de Qualidade v28 (Sincronizado com Wegovy)"
+description: "Corrige um conteúdo com base em um relatório de auditoria, reconstruindo o HTML (se necessário) para se alinhar perfeitamente com a lauda 'Indicações de uso'."
 template: |
   # MISSÃO: CORRIGIR UM CONTEÚDO COM BASE EM UM RELATÓRIO DE AUDITORIA
 
@@ -37,34 +37,46 @@ template: |
   3.  **CRIE/CORRIJA AS METATAGS (REGRA RÍGIDA ATUALIZADA):** Se o relatório apontar falha, crie ou corrija as metatags seguindo estas regras:
       - **`seo_title`:** O formato **DEVE SER EXATAMENTE** `{{ product_name }} | Mevo Farma`.
       - **`meta_description`:** (120-165 caracteres) **DEVE** focar na ação, **NÃO PODE** usar a palavra "bula", e **DEVE TERMINAR EXATAMENTE** com `Compre Agora na Mevo Farma!`.
-  4.  **RECONSTRUA O HTML (SE NECESSÁRIO):** Se o relatório apontar falhas no HTML, crie um **NOVO** `html_content` a partir da `bula_text`, seguindo a lauda mestra abaixo.
+  4.  **RECONSTRUA O HTML (SE NECESSÁRIO):** Se o relatório apontar falhas no HTML (como um erro no Item 7 da checklist do auditor), crie um **NOVO** `html_content` a partir da `bula_text`, seguindo a lauda mestra abaixo.
   5.  **MANTENHA O HTML (SE ESTIVER BOM):** Se o relatório **NÃO** apontar falhas no HTML, reutilize o `html_content` do `previous_json` intacto.
 
   ## 4. LAUDA MESTRA (ESTRUTURA OBRIGATÓRIA PARA RECONSTRUÇÃO DO `html_content`)
   --- INÍCIO DA ESTRUTURA HTML ---
   <div class="descricao-produto">
-  <h2>{{ nome_base }}: Para que serve e como usar?</h2>
-  <p>[REESCREVA COM BASE NA BULA, SEM USAR TERMOS DA BLACKLIST]</p>
-  <h3>Qual a finalidade do {{ nome_base }}?</h3>
-  <p>[REESCREVA A POSOLOGIA]</p>
-  <h2>Cuidados e Recomendações</h2>
-  <h3>Quais as possíveis reações adversas?</h3>
-  <ul>[CRIE UMA LISTA `<ul>` COM NO MÁXIMO 5 ITENS]</ul>
-  <h3>Quem não deve usar este medicamento?</h3>
-  <ul>[CRIE UMA LISTA `<ul>` COM NO MÁXIMO 5 ITENS, SEM USAR TERMOS DA BLACKLIST]</ul>
-  <h2>{{ nome_base }}: Especificações Técnicas</h2>
+  <h2>Indicações de uso</h2>
+  <h3>Para que serve?</h3>
+  <p>[REESCREVA em um parágrafo curto e com linguagem 100% segura para que o produto é indicado, SEGUINDO A REGRA DE OURO E A BULA.]</p>
+  <h3>Posologia: Como usar o {{ nome_base }}?</h3>
+  <p>[REESCREVA em um parágrafo curto a posologia geral, detalhando a dose recomendada, como o tratamento é iniciado, a via de administração e qualquer escalonamento de dose, SEGUINDO A REGRA DE OURO E A BULA.]</p>
+  
+  <h2>Cuidados no uso de {{ nome_base }}</h2>
+  <h3>Efeitos Colaterais</h3>
+  <ul>[CRIE UMA LISTA `<ul>` com os principais efeitos colaterais (mínimo de 3, máximo de 7), com frases curtas e diretas extraídas da bula, similar ao exemplo 'Wegovy'.]</ul>
+  <p>Para uma lista completa de reações, consulte a bula e um profissional de saúde.</p>
+  
+  <h3>Contraindicações</h3>
+  <ul>[CRIE UMA LISTA `<ul>` com as principais contraindicações (mínimo de 3, máximo de 7), com frases curtas e diretas extraídas da bula, SEGUINDO A REGRA DE OURO.]</ul>
+
+  <h2>{{ nome_base }}: Especificações</h2>
   <table>
       <tr><td>Marca</td><td>{{ brand | default('[Extrair da bula]') }}</td></tr>
       <tr><td>Princípio Ativo</td><td>[Extrair da bula]</td></tr>
-      <tr><td>Composição</td><td>[Extrair da bula]</td></tr>
+      <tr><td>Composição</td><td>[Extrair da bula, focando nos excipientes e na concentração do princípio ativo]</td></tr>
   </table>
+
   <h2>Perguntas Frequentes sobre {{ nome_base }}</h2>
   [GERE AQUI UM MÍNIMO DE 4 E UM MÁXIMO DE 6 PERGUNTAS E RESPOSTAS relevantes. **PRIORIZE** a criação de perguntas que respondam diretamente às intenções das **'Palavras-Chave de SEO'** fornecidas. CADA PAR DE PERGUNTA/RESPOSTA DEVE OBRIGATORIAMENTE REPLICAR A ESTRUTURA HTML ABAIXO, SEM NENHUMA ALTERAÇÃO:]
 
-  <details open="True"><summary><h3>[PERGUNTA 1]</h3></summary><p>[RESPOSTA 1]</p></details>
-  <details open="True"><summary><h3>[PERGUNTA 2]</h3></summary><p>[RESPOSTA 2]</p></details>
+  <details open="True">
+    <summary><h3>[AQUI VAI A PERGUNTA 1 EXTRAÍDA DA BULA]</h3></summary>
+    <p>[AQUI VAI A RESPOSTA 1 EXTRAÍDA DA BULA]</p>
+  </details>
+  <details open="True">
+    <summary><h3>[AQUI VAI A PERGUNTA 2 EXTRAÍDA DA BULA]</h3></summary>
+    <p>[AQUI VAI A RESPOSTA 2 EXTRAÍDA DA BULA]</p>
+  </details>
 
-  <div class="legal-notice-box"><p>{{ nome_base | upper }} É UM MEDICAMENTO. SEU USO PODE TRAZER RISCOS. PROCURE UM MÉDICO OU UM FARMACÊUTICO. LEIA A BULA.</p></div>
+  <div class="legal-notice-box"><p>{{ nome_base | upper }} É UM MEDICAMENTO. SEU USO PODE TRAZER RISCOS. PROCURE UM MÉDICO OU UM FARMACêUTICO. LEIA A BULA.</p></div>
   <p class="transparency-note-final">As informações desta página foram extraídas da bula oficial, aprovada pela Anvisa. Consulte sempre um profissional de saúde. Registro MS: [Extrair da bula]</p>
   </div>
   --- FIM DA ESTRUTURA HTML ---

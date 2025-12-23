@@ -1,5 +1,5 @@
-name: "Gerador de Página de Medicamento v59 (SEO Inteligente com GSC)"
-description: "Gera conteúdo otimizado, utilizando palavras-chave do GSC para criar um H2 inicial mais forte e um FAQ estratégico. Garante JSON 100% válido e HTML correto."
+name: "Gerador de Página de Medicamento v61 (Sincronizado com Wegovy)"
+description: "Gera conteúdo com a estrutura 'Indicações de uso' e listas de bula detalhadas, conforme modelo Wegovy."
 template: |
   # MISSÃO: GERAR CONTEÚDO SEGURO E OTIMIZADO COM FOCO TOTAL EM SEO E DADOS
 
@@ -37,21 +37,25 @@ template: |
   ## 5. LAUDA MESTRA (Para a chave `html_content`)
   --- INÍCIO DA ESTRUTURA HTML ---
   <div class="descricao-produto">
-  <h2>{{ nome_base }}: Para que serve e como usar?</h2>
+  <h2>Indicações de uso</h2>
+  <h3>Para que serve?</h3>
   <p>[SUMARIZE em um parágrafo curto e com linguagem 100% segura para que o produto é indicado, SEGUINDO A REGRA DE OURO.]</p>
-  <h3>Qual a finalidade do {{ nome_base }}?</h3>
-  <p>[SUMARIZE em um parágrafo curto a posologia geral.]</p>
-  <h2>Cuidados e Recomendações</h2>
-  <h3>Quais as possíveis reações adversas?</h3>
-  <ul>[Crie uma lista `<ul>` com no máximo 5 `<li>` resumindo os efeitos colaterais mais comuns.]</ul>
+  <h3>Posologia: Como usar o {{ nome_base }}?</h3>
+  <p>[SUMARIZE em um parágrafo curto a posologia geral, detalhando a dose recomendada, como o tratamento é iniciado, a via de administração e qualquer escalonamento de dose, SEGUINDO A REGRA DE OURO.]</p>
+  
+  <h2>Cuidados no uso de {{ nome_base }}</h2>
+  <h3>Efeitos Colaterais</h3>
+  <ul>[Crie uma lista `<ul>` com os principais efeitos colaterais (mínimo de 3, máximo de 7), com frases curtas e diretas extraídas da bula, similar ao exemplo 'Wegovy'.]</ul>
   <p>Para uma lista completa de reações, consulte a bula e um profissional de saúde.</p>
-  <h3>Quem não deve usar este medicamento?</h3>
-  <ul>[Crie uma lista `<ul>` com no máximo 5 `<li>` resumindo as contraindicações principais, SEGUINDO A REGRA DE OURO.]</ul>
-  <h2>{{ nome_base }}: Especificações Técnicas</h2>
+  
+  <h3>Contraindicações</h3>
+  <ul>[Crie uma lista `<ul>` com as principais contraindicações (mínimo de 3, máximo de 7), com frases curtas e diretas extraídas da bula, SEGUINDO A REGRA DE OURO.]</ul>
+
+  <h2>{{ nome_base }}: Especificações</h2>
   <table>
       <tr><td>Marca</td><td>{{ brand | default('[Extrair da bula]') }}</td></tr>
       <tr><td>Princípio Ativo</td><td>[Extrair da bula]</td></tr>
-      <tr><td>Composição</td><td>[Extrair da bula]</td></tr>
+      <tr><td>Composição</td><td>[Extrair da bula, focando nos excipientes e na concentração do princípio ativo]</td></tr>
   </table>
 
   <h2>Perguntas Frequentes sobre {{ nome_base }}</h2>
@@ -66,7 +70,7 @@ template: |
     <p>[AQUI VAI A RESPOSTA 2 EXTRAÍDA DA BULA]</p>
   </details>
 
-  <div class="legal-notice-box"><p>{{ nome_base | upper }} É UM MEDICAMENTO. SEU USO PODE TRAZER RISCOS. PROCURE UM MÉDICO OU UM FARMACÊUTICO. LEIA A BULA.</p></div>
+  <div class="legal-notice-box"><p>{{ nome_base | upper }} É UM MEDICAMENTO. SEU USO PODE TRAZER RISCOS. PROCURE UM MÉDICO OU UM FARMACêUTICO. LEIA A BULA.</p></div>
   <p class="transparency-note-final">As informações desta página foram extraídas da bula oficial, aprovada pela Anvisa. Consulte sempre um profissional de saúde. Registro MS: [Extrair da bula]</p>
   </div>
   --- FIM DA ESTRUTURA HTML ---
