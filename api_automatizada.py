@@ -489,3 +489,160 @@ async def reprocess_items(
                 yield await _send_event("log", {"message": f"<b>[SKU: {ean_sku}]</b> Falha no reprocessamento. Motivo: {e}", "type": "error"})
 
     return StreamingResponse(event_stream(items_to_reprocess, original_items_bytes, original_items_filename, catalog_bytes, context_text), media_type="text/event-stream")
+
+# --- VERSÃO FINAL: ALTA PERFORMANCE + AUDITORIA (ANTES/DEPOIS) ---
+@app.post("/process-merchant-recovery")
+async def process_merchant_recovery_stream(file: UploadFile = File(...)):
+    """
+    Processa planilha de recuperação (Merchant Safe) mantendo layout VTEX
+    e criando colunas de comparação para revisão manual.
+    """
+    try:
+        contents = await file.read()
+        filename = file.filename
+        # Lê a planilha original e mantém uma cópia intacta para referência
+        df_original = read_spreadsheet(contents, filename)
+        df_processamento = df_original.copy()
+        
+        # Mapeamento para encontrar os dados, mas SEM alterar os nomes originais no final
+        # Usamos nomes internos apenas para lógica
+        col_map_inv = {} 
+        
+        # Detecta colunas críticas dinamicamente
+        col_id = next((c for c in df_processamento.columns if '_IDSKU' in c or 'SKU' in c or 'RefId' in c), None)
+        col_nome = next((c for c in df_processamento.columns if 'NomeProduto' in c or 'Nome' in c), None)
+        col_titulo = next((c for c in df_processamento.columns if '_TituloSite' in c or 'Title' in c), '_TituloSite')
+        col_desc = next((c for c in df_processamento.columns if '_DescricaoProduto' in c or 'Description' in c), '_DescricaoProduto')
+        col_meta = next((c for c in df_processamento.columns if '_DescricaoMetaTag' in c or 'Meta' in c), '_DescricaoMetaTag')
+
+        if not col_id or not col_nome:
+            raise ValueError("Não foi possível identificar as colunas de ID (SKU) ou Nome do Produto.")
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erro na leitura: {str(e)}")
+
+    async def event_stream():
+        # Prepara DataFrame para receber o Antes/Depois
+        # Cria colunas de auditoria com os valores originais
+        df_processamento[f'[ANTES] {col_titulo}'] = df_processamento.get(col_titulo, '')
+        df_processamento[f'[ANTES] {col_desc}'] = df_processamento.get(col_desc, '')
+        
+        total_items = len(df_processamento)
+        CONCURRENCY_LIMIT = 50 
+        semaphore = asyncio.Semaphore(CONCURRENCY_LIMIT)
+        queue = asyncio.Queue()
+        
+        # Dicionário para armazenar resultados indexados pelo Index do DataFrame
+        # Isso garante que vamos inserir o dado na linha correta depois
+        processed_results = {}
+
+        yield await _send_event("log", {"message": f"🚀 Iniciando recuperação de {total_items} itens com auditoria...", "type": "info"})
+
+        async def worker(index, row):
+            async with semaphore:
+                try:
+                    # Extrai dados usando as colunas detectadas
+                    row_data = {
+                        "_IDSKU": str(row.get(col_id, '')),
+                        "NomeProduto": str(row.get(col_nome, '')),
+                        "TituloSite": str(row.get(col_titulo, row.get(col_nome, ''))),
+                        "DescricaoMetaTag": str(row.get(col_meta, '')),
+                        "DescricaoProduto": str(row.get(col_desc, ''))
+                    }
+                    
+                    if not row_data["_IDSKU"] or not row_data["NomeProduto"]:
+                        return 
+
+                    # Pipeline de IA
+                    result = await use_cases.run_merchant_recovery_pipeline(row_data)
+                    
+                    # Guarda o resultado vinculado ao índice da linha original
+                    processed_results[index] = result
+                    
+                    # Feedback visual
+                    item_preview = {
+                        "id": row_data["_IDSKU"],
+                        "name": row_data["NomeProduto"],
+                        "status": result["status"],
+                        "seo_title": result["content"]["seo_title"]
+                    }
+                    await queue.put(await _send_event("progress", item_preview))
+                    
+                except Exception as e:
+                    logging.error(f"Erro SKU {row.get(col_id)}: {e}")
+                    await queue.put(await _send_event("error", {"id": str(row.get(col_id)), "message": str(e)}))
+
+        tasks = [asyncio.create_task(worker(i, row)) for i, row in df_processamento.iterrows()]
+
+        async def waiter():
+            if tasks:
+                await asyncio.gather(*tasks)
+            await queue.put(None)
+
+        asyncio.create_task(waiter())
+
+        while True:
+            message = await queue.get()
+            if message is None:
+                break
+            yield message
+
+        # --- MONTAGEM DA PLANILHA FINAL ---
+        if processed_results:
+            try:
+                yield await _send_event("log", {"message": "💾 Consolidando dados na planilha VTEX...", "type": "info"})
+                
+                # Atualiza o DataFrame original com os novos valores
+                for idx, res in processed_results.items():
+                    # Colunas Oficiais recebem o NOVO valor (Pronto para Importar)
+                    df_processamento.at[idx, col_titulo] = res["content"]["seo_title"]
+                    df_processamento.at[idx, col_desc] = res["content"]["html_content"]
+                    df_processamento.at[idx, col_meta] = res["content"]["meta_description"]
+                    
+                    # Coluna extra de Status
+                    df_processamento.at[idx, 'STATUS_SISTEMA'] = res["status"]
+
+                # Reordena colunas para facilitar a revisão visual
+                # Coloca [ANTES] Título logo antes de _TituloSite
+                cols = list(df_processamento.columns)
+                
+                # Tenta organizar visualmente se possível, senão mantém ordem padrão
+                try:
+                    # Remove as colunas de 'Antes' da lista atual para reinserir na posição certa
+                    audit_cols = [c for c in cols if '[ANTES]' in c]
+                    core_cols = [c for c in cols if c not in audit_cols and c != 'STATUS_SISTEMA']
+                    
+                    final_order = []
+                    for c in core_cols:
+                        final_order.append(c)
+                        # Se acharmos a coluna oficial, colocamos a coluna [ANTES] dela logo à esquerda (ou direita)
+                        # Preferência: [ANTES] _TituloSite | _TituloSite (Novo)
+                        if c == col_titulo:
+                            final_order.insert(-1, f'[ANTES] {col_titulo}')
+                        elif c == col_desc:
+                            final_order.insert(-1, f'[ANTES] {col_desc}')
+                    
+                    # Adiciona as que sobraram
+                    for ac in audit_cols:
+                        if ac not in final_order: final_order.append(ac)
+                    
+                    final_order.insert(0, 'STATUS_SISTEMA')
+                    df_final = df_processamento[final_order]
+                except:
+                    df_final = df_processamento # Fallback se der erro na ordenação
+
+                output = io.BytesIO()
+                df_final.to_excel(output, index=False)
+                b64_data = base64.b64encode(output.getvalue()).decode()
+                
+                yield await _send_event("finished", {
+                    "message": "Processamento concluído! Baixe a planilha para revisão comparativa.",
+                    "file_data": b64_data,
+                    "filename": f"vtex_pronta_entrega_{filename.split('.')[0]}.xlsx"
+                })
+            except Exception as e:
+                 logging.error(f"Erro ao gerar Excel final: {e}", exc_info=True)
+                 yield await _send_event("log", {"message": f"Erro na consolidação: {e}", "type": "error"})
+        else:
+            yield await _send_event("log", {"message": "Nenhum item processado.", "type": "warning"})
+    return StreamingResponse(event_stream(), media_type="text/event-stream")

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Esteira de Recuperação Merchant - Mevo Farma</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; }
+        .dropzone { border: 2px dashed #00bfa5; padding: 40px; text-align: center; color: #666; cursor: pointer; border-radius: 8px; margin-bottom: 20px; transition: background 0.3s; }
+        .dropzone:hover { background: #e0f2f1; }
+        .dropzone.dragover { background: #b2dfdb; border-color: #00796b; }
+        
+        .status-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+        .status-table th, .status-table td { border-bottom: 1px solid #ddd; padding: 12px; text-align: left; }
+        .status-table th { background-color: #f9f9f9; color: #555; }
+        
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block; }
+        .status-processing { background: #e3f2fd; color: #1565c0; }
+        .status-success { background: #e8f5e9; color: #2e7d32; }
+        .status-error { background: #ffebee; color: #c62828; }
+        
+        .btn-export { background: #00bfa5; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; float: right; display: none; font-size: 16px; font-weight: bold; }
+        .btn-export:hover { background: #00897b; }
+        
+        #logArea { margin-top: 20px; padding: 10px; background: #263238; color: #cfd8dc; font-family: monospace; border-radius: 4px; max-height: 150px; overflow-y: auto; display: none; }
+        .log-entry { margin: 2px 0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚀 Esteira de Recuperação Merchant Center</h1>
+    <p>Suba sua planilha de itens <b>reprovados</b>. O sistema irá blindar as descrições contra as políticas do Google (Medicamentos & Saúde).</p>
+    
+    <input type="file" id="fileInput" style="display: none;" accept=".xlsx, .csv">
+    <div class="dropzone" id="dropzone">
+        📂 Arraste a planilha (.csv ou .xlsx) aqui ou clique para selecionar
+    </div>
+
+    <button class="btn-export" id="btnExport">📥 Baixar Planilha Corrigida</button>
+
+    <div id="logArea"></div>
+
+    <table class="status-table" id="processTable">
+        <thead>
+            <tr>
+                <th>ID SKU</th>
+                <th>Nome do Produto</th>
+                <th>Status da Recuperação</th>
+                <th>Novo Título (SEO)</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const tableBody = document.querySelector('#processTable tbody');
+    const logArea = document.getElementById('logArea');
+    const btnExport = document.getElementById('btnExport');
+
+    // Setup Drag & Drop
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length) handleFile(e.target.files[0]);
+    });
+
+    async function handleFile(file) {
+        // UI Reset
+        tableBody.innerHTML = '';
+        btnExport.style.display = 'none';
+        logArea.style.display = 'block';
+        logArea.innerHTML = '<div class="log-entry">🔄 Iniciando upload e processamento...</div>';
+        dropzone.innerHTML = `⏳ Processando: <b>${file.name}</b>`;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            // Conecta ao Endpoint Real
+            const response = await fetch('http://localhost:8000/process-merchant-recovery', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) throw new Error(`Erro na API: ${response.statusText}`);
+
+            // Leitor de Stream para SSE (Server-Sent Events) manual
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+            let buffer = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split("\n\n"); // SSE separa eventos por \n\n
+                buffer = lines.pop(); // Guarda o resto incompleto
+
+                for (const line of lines) {
+                    processEvent(line);
+                }
+            }
+
+        } catch (error) {
+            console.error(error);
+            logArea.innerHTML += `<div class="log-entry" style="color: #ff5252">❌ Erro de conexão: ${error.message}</div>`;
+            dropzone.innerHTML = "❌ Erro. Tente novamente.";
+        }
+    }
+
+    function processEvent(eventString) {
+        if (!eventString.startsWith("event:")) return;
+
+        const eventMatch = eventString.match(/event: (.*?)\ndata: (.*)/s);
+        if (!eventMatch) return;
+
+        const eventType = eventMatch[1].trim();
+        const data = JSON.parse(eventMatch[2]);
+
+        if (eventType === 'log') {
+            const color = data.type === 'error' ? '#ff5252' : data.type === 'warning' ? '#ffab40' : '#b0bec5';
+            logArea.innerHTML += `<div class="log-entry" style="color: ${color}">> ${data.message}</div>`;
+            logArea.scrollTop = logArea.scrollHeight;
+        } 
+        else if (eventType === 'progress') {
+            addOrUpdateRow(data);
+        } 
+        else if (eventType === 'finished') {
+            dropzone.innerHTML = "✅ Processamento Finalizado!";
+            setupDownloadButton(data.file_data, data.filename);
+        }
+    }
+
+    function addOrUpdateRow(item) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><b>${item.id}</b></td>
+            <td>${item.name}</td>
+            <td><span class="status-badge status-success">✅ ${item.status}</span></td>
+            <td style="font-size: 0.9em; color: #555;">${item.seo_title}</td>
+        `;
+        // Adiciona no topo
+        tableBody.insertBefore(row, tableBody.firstChild);
+    }
+
+    function setupDownloadButton(base64Data, filename) {
+        btnExport.style.display = 'block';
+        btnExport.onclick = () => {
+            const link = document.createElement('a');
+            link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${base64Data}`;
+            link.download = filename;
+            link.click();
+        };
+    }
+</script>
+
+</body>
+</html>
